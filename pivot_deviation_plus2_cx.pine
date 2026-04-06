@@ -1,0 +1,448 @@
+//@version=6
+indicator("Pivot Deviation+2 Cx", overlay=true, max_labels_count=200, dynamic_requests=true)
+
+//================ PRESET =================
+preset = input.string("Intraday", "Strategy Preset", options=["Scalping", "Intraday", "Swing"])
+
+// PRESET VALUES
+devExtreme   = preset == "Scalping" ? 2.0 : preset == "Intraday" ? 3.0 : 4.0
+atrMult      = preset == "Scalping" ? 1.0 : preset == "Intraday" ? 1.2 : 1.5
+emaLen       = preset == "Scalping" ? 20  : preset == "Intraday" ? 50  : 100
+adxMax       = preset == "Scalping" ? 30  : preset == "Intraday" ? 25  : 20
+volMult      = preset == "Scalping" ? 1.2 : preset == "Intraday" ? 1.5 : 2.0
+cooldownBars = preset == "Scalping" ? 5   : preset == "Intraday" ? 10  : 20
+
+//================ INPUTS =================
+pivotTF         = input.timeframe("D", "Pivot TF")
+useWeeklyFilter = input.bool(true, "Use Weekly Pivot Filter")
+atrLen          = input.int(14, "ATR Length")
+adxLen          = input.int(14, "ADX Length")
+volLen          = input.int(20, "Volume Avg Length")
+sessionFilter   = input.session("0915-1130", "Session Filter")
+securityBarsMain = input.int(300, "Main Security Bars", minval=50, tooltip="History bars for main symbol security calls")
+securityBarsMatrix = input.int(200, "Matrix Security Bars", minval=50, tooltip="History bars for pivot matrix security calls")
+securityBarsWatchlist = input.int(120, "Watchlist Security Bars", minval=50, tooltip="History bars for watchlist security calls")
+signalStrictness = input.string("Balanced", "Signal Strictness", options=["Strict", "Balanced", "Loose"])
+crashLookback = input.int(20, "Crash Filter Lookback", minval=5)
+crashBufferPct = input.float(1.0, "Crash Buffer %", minval=0.0, step=0.1)
+useVWAPHold = input.bool(true, "Use VWAP Hold Confirmation")
+useIndexSafety = input.bool(true, "Use Index Safety Filter")
+setupWindowBars = input.int(5, "Setup Window Bars", minval=1, tooltip="Bars allowed between extreme/sweep and reversal confirmation")
+volumeMode = input.string("Conservative", "Volume Confirmation Mode", options=["Conservative", "Aggressive"])
+
+useVWAPFilter = input.bool(true, "Use VWAP Filter")
+showVWAP      = input.bool(true, "Show VWAP")
+showHeatmap = input.bool(true, "Heatmap")
+showDash    = input.bool(true, "Dashboard")
+showLines   = input.bool(true, "Show Lines")
+showSignals = input.bool(true, "Show Signal Labels")
+showPivotMatrix = input.bool(true, "Show Pivot Matrix Table")
+pivotMatrixPos  = input.string("Bottom Left", "Pivot Matrix Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"])
+pivotMatrixTextSize = input.string("small", "Pivot Matrix Text Size", options=["tiny", "small", "normal", "large"])
+
+// PIVOT DISPLAY
+showPivotLevels = input.bool(true, "Show Pivot Levels")
+showPivotSR     = input.bool(true, "Show R1 S1")
+showPivotSR2    = input.bool(false, "Show R2 S2")
+showPivotSR3    = input.bool(false, "Show R3 S3")
+showPrevHL      = input.bool(true, "Show Previous Day High Low")
+
+// LINE COLORS
+pivotColor      = input.color(color.yellow, "Pivot Color")
+resistanceColor = input.color(color.red, "Resistance Color")
+supportColor    = input.color(color.green, "Support Color")
+prevHLColor     = input.color(color.purple, "Previous H/L Color")
+weeklyPivotColor= input.color(color.orange, "Weekly Pivot Color")
+atrUpperColor   = input.color(color.red, "ATR Upper Color")
+atrLowerColor   = input.color(color.green, "ATR Lower Color")
+vwapColor       = input.color(color.blue, "VWAP Color")
+emaColor        = input.color(color.aqua, "EMA Color")
+meanColor       = input.color(color.white, "1Y Mean Color")
+sd1Color        = input.color(color.orange, "1Y ±1 SD Color")
+sd2UpColor      = input.color(color.red, "1Y +2 SD Color")
+sd2DnColor      = input.color(color.green, "1Y -2 SD Color")
+
+// TABLE SETTINGS
+tableOpacity  = input.int(80, "Table Transparency", 0, 100)
+tableTextSize = input.string("small", "Table Text Size", options=["tiny", "small", "normal", "large"])
+tablePos      = input.string("Top Right", "Dashboard Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"])
+
+pos     = tablePos == "Top Right" ? position.top_right : tablePos == "Top Left" ? position.top_left : tablePos == "Bottom Right" ? position.bottom_right : position.bottom_left
+txtSize = tableTextSize == "tiny" ? size.tiny : tableTextSize == "small" ? size.small : tableTextSize == "large" ? size.large : size.normal
+tableBg = color.new(color.black, tableOpacity)
+pivotMatrixTablePos = pivotMatrixPos == "Top Right" ? position.top_right : pivotMatrixPos == "Top Left" ? position.top_left : pivotMatrixPos == "Bottom Right" ? position.bottom_right : position.bottom_left
+pivotMatrixTxtSize = pivotMatrixTextSize == "tiny" ? size.tiny : pivotMatrixTextSize == "small" ? size.small : pivotMatrixTextSize == "large" ? size.large : size.normal
+
+//================ DAILY + WEEKLY DATA =================
+[dHigh, dLow, dClose] = request.security(syminfo.tickerid, pivotTF, [high[1], low[1], close[1]], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off, calc_bars_count=securityBarsMain)
+[wHigh, wLow, wClose] = request.security(syminfo.tickerid, "W", [high[1], low[1], close[1]], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off, calc_bars_count=securityBarsMain)
+
+pivot       = (dHigh + dLow + dClose) / 3
+prevHigh    = dHigh
+prevLow     = dLow
+weeklyPivot = (wHigh + wLow + wClose) / 3
+
+// PIVOT LEVELS
+R1 = 2 * pivot - prevLow
+S1 = 2 * pivot - prevHigh
+R2 = pivot + (prevHigh - prevLow)
+S2 = pivot - (prevHigh - prevLow)
+R3 = prevHigh + 2 * (pivot - prevLow)
+S3 = prevLow - 2 * (prevHigh - pivot)
+
+//================ CORE CALCULATIONS =================
+devPercent = math.abs(pivot) > 0.000001 ? (close - pivot) / pivot * 100 : na
+
+atr      = ta.atr(atrLen)
+upperATR = pivot + atr * atrMult
+lowerATR = pivot - atr * atrMult
+
+emaTrend  = ta.ema(close, emaLen)
+trendUp   = close > emaTrend
+trendDown = close < emaTrend
+trendShiftUp = ta.crossover(close, emaTrend)
+trendShiftDown = ta.crossunder(close, emaTrend)
+
+[_, _, adx] = ta.dmi(adxLen, adxLen)
+rangeMarket = adx < adxMax
+
+vwapValue = ta.vwap(hlc3)
+volAvg    = ta.sma(volume, volLen)
+volSpike  = volume > volAvg * volMult
+bullVol   = volumeMode == "Aggressive" ? volume > volAvg * volMult : close > open and volume > volAvg * volMult
+bearVol   = volumeMode == "Aggressive" ? volume > volAvg * volMult : close < open and volume > volAvg * volMult
+
+lookback  = 10
+sweepHigh = high > ta.highest(high[1], lookback)
+sweepLow  = low < ta.lowest(low[1], lookback)
+
+inSession = timeframe.isintraday ? not na(time(timeframe.period, sessionFilter)) : true
+vwapReclaimLong = ta.crossover(close, vwapValue)
+vwapRejectShort = ta.crossunder(close, vwapValue)
+vwapHoldLong = close > vwapValue and close[1] > vwapValue
+vwapHoldShort = close < vwapValue and close[1] < vwapValue
+noCrash = close > ta.lowest(close, crashLookback) * (1 + crashBufferPct / 100.0)
+noMeltUp = close < ta.highest(close, crashLookback) * (1 - crashBufferPct / 100.0)
+extremeUp   = devPercent > devExtreme and close > upperATR
+extremeDown = devPercent < -devExtreme and close < lowerATR
+tickerUpper = str.upper(syminfo.ticker)
+isIndex = str.contains(tickerUpper, "NIFTY") or str.contains(tickerUpper, "BANK") or str.contains(tickerUpper, "FIN")
+isEtf = str.contains(tickerUpper, "ETF")
+isIndexOrEtf = isIndex or isEtf
+vwapHoldActive = preset == "Swing" ? true : preset == "Intraday" ? false : useVWAPHold
+recentSweepLow = nz(ta.barssince(sweepLow), 10000) <= setupWindowBars
+recentExtremeDown = nz(ta.barssince(extremeDown), 10000) <= setupWindowBars
+recentSweepHigh = nz(ta.barssince(sweepHigh), 10000) <= setupWindowBars
+recentExtremeUp = nz(ta.barssince(extremeUp), 10000) <= setupWindowBars
+
+weeklyLong  = not useWeeklyFilter or close < weeklyPivot
+weeklyShort = not useWeeklyFilter or close > weeklyPivot
+
+longVWAPConfirm = not useVWAPFilter or (vwapReclaimLong and (not vwapHoldActive or vwapHoldLong))
+shortVWAPConfirm = not useVWAPFilter or (vwapRejectShort and (not vwapHoldActive or vwapHoldShort))
+
+longSetup = recentExtremeDown and recentSweepLow and bullVol and trendShiftUp and noCrash and inSession and longVWAPConfirm
+shortSetup = recentExtremeUp and recentSweepHigh and bearVol and trendShiftDown and noMeltUp and inSession and shortVWAPConfirm
+
+strictLongCond = longSetup and rangeMarket and weeklyLong
+strictShortCond = shortSetup and rangeMarket and weeklyShort
+
+balancedLongCond = longSetup and weeklyLong
+balancedShortCond = shortSetup and weeklyShort
+
+looseLongCond = longSetup
+looseShortCond = shortSetup
+
+longCondRaw  = signalStrictness == "Strict" ? strictLongCond : signalStrictness == "Loose" ? looseLongCond : balancedLongCond
+shortCondRaw = signalStrictness == "Strict" ? strictShortCond : signalStrictness == "Loose" ? looseShortCond : balancedShortCond
+
+longCond = useIndexSafety and isIndexOrEtf ? longCondRaw and trendShiftUp : longCondRaw
+shortCond = useIndexSafety and isIndexOrEtf ? shortCondRaw and trendShiftDown : shortCondRaw
+
+// COOLDOWN
+var int lastSignalBar = na
+allowSignal = na(lastSignalBar) or bar_index - lastSignalBar >= cooldownBars
+longSignal  = longCond and allowSignal
+shortSignal = shortCond and allowSignal
+
+if longSignal or shortSignal
+    lastSignalBar := bar_index
+
+prob = math.min(math.abs(devPercent) / devExtreme * 100, 100)
+
+trendStatus = trendUp ? "Bullish" : trendDown ? "Bearish" : "Neutral"
+regime      = rangeMarket ? "Range" : "Trending"
+volStatus   = volSpike ? "Spike" : "Normal"
+
+//================ PLOTS =================
+plot(showLines and showPivotLevels ? pivot : na, "Pivot", color=pivotColor, linewidth=2, style=plot.style_stepline)
+plot(showLines and showPivotSR ? R1 : na, "R1", color=resistanceColor, style=plot.style_stepline)
+plot(showLines and showPivotSR ? S1 : na, "S1", color=supportColor, style=plot.style_stepline)
+plot(showLines and showPivotSR2 ? R2 : na, "R2", color=resistanceColor, style=plot.style_stepline)
+plot(showLines and showPivotSR2 ? S2 : na, "S2", color=supportColor, style=plot.style_stepline)
+plot(showLines and showPivotSR3 ? R3 : na, "R3", color=resistanceColor, style=plot.style_stepline)
+plot(showLines and showPivotSR3 ? S3 : na, "S3", color=supportColor, style=plot.style_stepline)
+
+plot(showLines and showPrevHL ? prevHigh : na, "Prev High", color=prevHLColor, linewidth=2, style=plot.style_stepline)
+plot(showLines and showPrevHL ? prevLow : na, "Prev Low", color=prevHLColor, linewidth=2, style=plot.style_stepline)
+
+plot(showLines and useWeeklyFilter ? weeklyPivot : na, "Weekly Pivot", color=weeklyPivotColor, style=plot.style_stepline)
+plot(showLines ? upperATR : na, "ATR Upper", color=atrUpperColor, style=plot.style_stepline)
+plot(showLines ? lowerATR : na, "ATR Lower", color=atrLowerColor, style=plot.style_stepline)
+plot(showLines and showVWAP ? vwapValue : na, "VWAP", color=vwapColor, style=plot.style_stepline)
+plot(showLines ? emaTrend : na, "EMA", color=emaColor, style=plot.style_stepline)
+
+bgcolor(showHeatmap and extremeUp ? color.new(color.red, 70) : na)
+bgcolor(showHeatmap and extremeDown ? color.new(color.green, 70) : na)
+
+if showSignals and longSignal and barstate.isconfirmed
+    label.new(bar_index, low, "LONG\nDev " + str.tostring(devPercent, "#.##") + "%", style=label.style_label_up, color=color.green, textcolor=color.white)
+if showSignals and shortSignal and barstate.isconfirmed
+    label.new(bar_index, high, "SHORT\nDev " + str.tostring(devPercent, "#.##") + "%", style=label.style_label_down, color=color.red, textcolor=color.white)
+
+//================ DASHBOARD =================
+var table dash = na
+var string lastDashPos = ""
+if showDash and (na(dash) or lastDashPos != tablePos)
+    if not na(dash)
+        table.delete(dash)
+    dash := table.new(pos, 2, 7)
+    lastDashPos := tablePos
+
+if not showDash and not na(dash)
+    table.delete(dash)
+    dash := na
+if showDash and barstate.islast
+    table.cell(dash, 0, 0, "Preset", bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+    table.cell(dash, 1, 0, preset, bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+
+    table.cell(dash, 0, 1, "Deviation", bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+    table.cell(dash, 1, 1, str.tostring(devPercent, "#.##") + "%", bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+
+    table.cell(dash, 0, 2, "Trend", bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+    table.cell(dash, 1, 2, trendStatus, bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+
+    table.cell(dash, 0, 3, "Regime", bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+    table.cell(dash, 1, 3, regime, bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+
+    table.cell(dash, 0, 4, "Volume", bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+    table.cell(dash, 1, 4, volStatus, bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+
+    table.cell(dash, 0, 5, "Reversion", bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+    table.cell(dash, 1, 5, str.tostring(prob, "#") + "%", bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+
+    table.cell(dash, 0, 6, "Pivot", bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+    table.cell(dash, 1, 6, str.tostring(pivot, "#.##"), bgcolor=tableBg, text_color=color.white, text_size=txtSize)
+
+alertcondition(longSignal, "Pivot Buy", "Extreme negative deviation + liquidity sweep")
+alertcondition(shortSignal, "Pivot Sell", "Extreme positive deviation + liquidity sweep")
+
+//================ MULTI-TF PIVOT MATRIX =================
+f_pivotRow(_tf) =>
+    [tfHigh, tfLow, tfClose, tfOpen, tfVol] = request.security(syminfo.tickerid, _tf, [high[1], low[1], close[1], open[1], volume[1]], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off, calc_bars_count=securityBarsMatrix)
+    tfPivot = (tfHigh + tfLow + tfClose) / 3
+    tfR1 = 2 * tfPivot - tfLow
+    tfS1 = 2 * tfPivot - tfHigh
+    tfR2 = tfPivot + (tfHigh - tfLow)
+    tfS2 = tfPivot - (tfHigh - tfLow)
+    tfRange = tfHigh - tfLow
+    tfClv = tfRange != 0 ? math.max(0.0, math.min(1.0, (tfClose - tfLow) / tfRange)) : 0.5
+    tfVolBuy = tfVol * tfClv
+    tfVolSell = tfVol - tfVolBuy
+    tfConclusion = tfVolBuy > tfVolSell ? "Vol+" : tfVolSell > tfVolBuy ? "Vol-" : "Flat"
+    [tfPivot, tfR1, tfR2, tfS1, tfS2, tfVolBuy, tfVolSell, tfConclusion]
+
+f_pmCell(table _table, int _col, int _row, string _text, color _textColor, color _bgColor) =>
+    table.cell(_table, _col, _row, _text, text_color=_textColor, bgcolor=_bgColor, text_size=pivotMatrixTxtSize)
+
+chHigh = high[1]
+chLow = low[1]
+chClose = close[1]
+chOpen = open[1]
+chPivot = (chHigh + chLow + chClose) / 3
+chR1 = 2 * chPivot - chLow
+chS1 = 2 * chPivot - chHigh
+chR2 = chPivot + (chHigh - chLow)
+chS2 = chPivot - (chHigh - chLow)
+chRange = chHigh - chLow
+chClv = chRange != 0 ? math.max(0.0, math.min(1.0, (chClose - chLow) / chRange)) : 0.5
+chVolBuy = volume[1] * chClv
+chVolSell = volume[1] - chVolBuy
+chConclusion = chVolBuy > chVolSell ? "Vol+" : chVolSell > chVolBuy ? "Vol-" : "Flat"
+
+[dPivotM, dR1M, dR2M, dS1M, dS2M, dVolBuyM, dVolSellM, dConclusionM] = f_pivotRow("D")
+[wPivotM, wR1M, wR2M, wS1M, wS2M, wVolBuyM, wVolSellM, wConclusionM] = f_pivotRow("W")
+[mPivotM, mR1M, mR2M, mS1M, mS2M, mVolBuyM, mVolSellM, mConclusionM] = f_pivotRow("M")
+[yPivotM, yR1M, yR2M, yS1M, yS2M, yVolBuyM, yVolSellM, yConclusionM] = f_pivotRow("12M")
+
+var table pivotMatrix = na
+var string lastPivotMatrixPos = ""
+if showPivotMatrix and (na(pivotMatrix) or lastPivotMatrixPos != pivotMatrixPos)
+    if not na(pivotMatrix)
+        table.delete(pivotMatrix)
+    pivotMatrix := table.new(pivotMatrixTablePos, 9, 6, bgcolor=color.new(color.black, 85), frame_color=color.white, frame_width=1, border_color=color.white, border_width=1)
+    lastPivotMatrixPos := pivotMatrixPos
+
+if not showPivotMatrix and not na(pivotMatrix)
+    table.delete(pivotMatrix)
+    pivotMatrix := na
+
+if showPivotMatrix and barstate.islast
+    f_pmCell(pivotMatrix, 0, 0, "Header", color.white, color.new(color.black, 0))
+    f_pmCell(pivotMatrix, 1, 0, "Pivot", color.white, color.new(color.black, 0))
+    f_pmCell(pivotMatrix, 2, 0, "R1", color.white, color.new(color.black, 0))
+    f_pmCell(pivotMatrix, 3, 0, "R2", color.white, color.new(color.black, 0))
+    f_pmCell(pivotMatrix, 4, 0, "S1", color.white, color.new(color.black, 0))
+    f_pmCell(pivotMatrix, 5, 0, "S2", color.white, color.new(color.black, 0))
+    f_pmCell(pivotMatrix, 6, 0, "Vol+ Buy", color.white, color.new(color.black, 0))
+    f_pmCell(pivotMatrix, 7, 0, "Vol- Sell", color.white, color.new(color.black, 0))
+    f_pmCell(pivotMatrix, 8, 0, "Conclusion", color.white, color.new(color.black, 0))
+
+    f_pmCell(pivotMatrix, 0, 1, "Chart", color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 1, 1, str.tostring(chPivot, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 2, 1, str.tostring(chR1, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 3, 1, str.tostring(chR2, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 4, 1, str.tostring(chS1, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 5, 1, str.tostring(chS2, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 6, 1, str.tostring(chVolBuy, "#"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 7, 1, str.tostring(chVolSell, "#"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 8, 1, chConclusion, chConclusion == "Vol+" ? color.lime : chConclusion == "Vol-" ? color.red : color.white, color.new(color.black, 100))
+
+    f_pmCell(pivotMatrix, 0, 2, "Day", color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 1, 2, str.tostring(dPivotM, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 2, 2, str.tostring(dR1M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 3, 2, str.tostring(dR2M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 4, 2, str.tostring(dS1M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 5, 2, str.tostring(dS2M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 6, 2, str.tostring(dVolBuyM, "#"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 7, 2, str.tostring(dVolSellM, "#"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 8, 2, dConclusionM, dConclusionM == "Vol+" ? color.lime : dConclusionM == "Vol-" ? color.red : color.white, color.new(color.black, 100))
+
+    f_pmCell(pivotMatrix, 0, 3, "Week", color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 1, 3, str.tostring(wPivotM, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 2, 3, str.tostring(wR1M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 3, 3, str.tostring(wR2M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 4, 3, str.tostring(wS1M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 5, 3, str.tostring(wS2M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 6, 3, str.tostring(wVolBuyM, "#"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 7, 3, str.tostring(wVolSellM, "#"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 8, 3, wConclusionM, wConclusionM == "Vol+" ? color.lime : wConclusionM == "Vol-" ? color.red : color.white, color.new(color.black, 100))
+
+    f_pmCell(pivotMatrix, 0, 4, "Month", color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 1, 4, str.tostring(mPivotM, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 2, 4, str.tostring(mR1M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 3, 4, str.tostring(mR2M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 4, 4, str.tostring(mS1M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 5, 4, str.tostring(mS2M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 6, 4, str.tostring(mVolBuyM, "#"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 7, 4, str.tostring(mVolSellM, "#"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 8, 4, mConclusionM, mConclusionM == "Vol+" ? color.lime : mConclusionM == "Vol-" ? color.red : color.white, color.new(color.black, 100))
+
+    f_pmCell(pivotMatrix, 0, 5, "Year", color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 1, 5, str.tostring(yPivotM, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 2, 5, str.tostring(yR1M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 3, 5, str.tostring(yR2M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 4, 5, str.tostring(yS1M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 5, 5, str.tostring(yS2M, "#.##"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 6, 5, str.tostring(yVolBuyM, "#"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 7, 5, str.tostring(yVolSellM, "#"), color.white, color.new(color.black, 100))
+    f_pmCell(pivotMatrix, 8, 5, yConclusionM, yConclusionM == "Vol+" ? color.lime : yConclusionM == "Vol-" ? color.red : color.white, color.new(color.black, 100))
+
+//================ WATCHLIST (IMPROVED LOOP VERSION) =================
+showWatchlist = input.bool(true, "Show Mini Watchlist")
+watchTrendEmaLen = input.int(50, "Watchlist EMA Length", minval=1)
+neutralThresholdPct = input.float(0.10, "Neutral Threshold %", minval=0.01, step=0.01)
+
+watchSym1  = input.symbol("NSE:RELIANCE", "Symbol 1")
+watchSym2  = input.symbol("NSE:HDFCBANK", "Symbol 2")
+watchSym3  = input.symbol("NSE:ICICIBANK", "Symbol 3")
+watchSym4  = input.symbol("NSE:TCS", "Symbol 4")
+watchSym5  = input.symbol("NSE:INFY", "Symbol 5")
+watchSym6  = input.symbol("NSE:SBIN", "Symbol 6")
+watchSym7  = input.symbol("NSE:LT", "Symbol 7")
+watchSym8  = input.symbol("NSE:ITC", "Symbol 8")
+watchSym9  = input.symbol("NSE:AXISBANK", "Symbol 9")
+watchSym10 = input.symbol("NSE:NIFTY", "Symbol 10")
+
+string[] watchSymbols = array.from(watchSym1, watchSym2, watchSym3, watchSym4, watchSym5, watchSym6, watchSym7, watchSym8, watchSym9, watchSym10)
+
+watchOpacity = input.int(50, "Watchlist Transparency", 0, 100)
+watchTextSize = input.string("small", "Watchlist Text Size", options=["tiny", "small", "normal", "large"])
+watchPos = input.string("Bottom Right", "Watchlist Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"])
+watchBg      = color.new(color.black, watchOpacity)
+watchTxtSize = watchTextSize == "tiny" ? size.tiny : watchTextSize == "small" ? size.small : watchTextSize == "large" ? size.large : size.normal
+watchTablePos = watchPos == "Top Right" ? position.top_right : watchPos == "Top Left" ? position.top_left : watchPos == "Bottom Right" ? position.bottom_right : position.bottom_left
+var table watch = na
+var string lastWatchPos = ""
+if showWatchlist and (na(watch) or lastWatchPos != watchPos)
+    if not na(watch)
+        table.delete(watch)
+    watch := table.new(watchTablePos, 4, 11)
+    lastWatchPos := watchPos
+
+if not showWatchlist and not na(watch)
+    table.delete(watch)
+    watch := na
+watchEmaExpr = ta.ema(close, watchTrendEmaLen)
+
+f_trendLabel(_price, _ema, _neutralThresholdFrac) =>
+    na(_price) or na(_ema) or _ema == 0 ? "Neutral" : math.abs(_price - _ema) / _ema < _neutralThresholdFrac ? "Neutral" : _price > _ema ? "Bull" : "Bear"
+
+f_rowColor(_trend) =>
+    _trend == "Bull" ? color.green : _trend == "Bear" ? color.red : color.white
+
+neutralThresholdFrac = neutralThresholdPct / 100.0
+
+var float[] watchCloses = array.new_float(array.size(watchSymbols), na)
+var float[] watchPivots = array.new_float(array.size(watchSymbols), na)
+var float[] watchEmas   = array.new_float(array.size(watchSymbols), na)
+
+for i = 0 to array.size(watchSymbols) - 1
+    sym = array.get(watchSymbols, i)
+
+    [watchCloseVal, watchEmaVal] = request.security(sym, timeframe.period, [close, watchEmaExpr], ignore_invalid_symbol=true, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off, calc_bars_count=securityBarsWatchlist)
+    watchPivotVal = request.security(sym, "D", (high[1] + low[1] + close[1]) / 3, ignore_invalid_symbol=true, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off, calc_bars_count=securityBarsWatchlist)
+
+    array.set(watchCloses, i, watchCloseVal)
+    array.set(watchPivots, i, watchPivotVal)
+    array.set(watchEmas, i, watchEmaVal)
+
+if showWatchlist and barstate.islast
+    table.cell(watch, 0, 0, "Symbol", text_color=color.yellow, bgcolor=watchBg, text_size=watchTxtSize)
+    table.cell(watch, 1, 0, "Price", text_color=color.yellow, bgcolor=watchBg, text_size=watchTxtSize)
+    table.cell(watch, 2, 0, "Dev%", text_color=color.yellow, bgcolor=watchBg, text_size=watchTxtSize)
+    table.cell(watch, 3, 0, "Trend", text_color=color.yellow, bgcolor=watchBg, text_size=watchTxtSize)
+
+    for i = 0 to array.size(watchSymbols) - 1
+        sym = array.get(watchSymbols, i)
+        watchCloseVal = array.get(watchCloses, i)
+        watchPivotVal = array.get(watchPivots, i)
+        watchEmaVal   = array.get(watchEmas, i)
+
+        watchDev   = watchPivotVal != 0 ? (watchCloseVal - watchPivotVal) / watchPivotVal * 100 : na
+        watchTrend = f_trendLabel(watchCloseVal, watchEmaVal, neutralThresholdFrac)
+        watchColor = f_rowColor(watchTrend)
+
+        row = i + 1
+        table.cell(watch, 0, row, str.tostring(sym), text_color=watchColor, bgcolor=watchBg, text_size=watchTxtSize)
+        table.cell(watch, 1, row, str.tostring(watchCloseVal, "#.##"), text_color=watchColor, bgcolor=watchBg, text_size=watchTxtSize)
+        table.cell(watch, 2, row, str.tostring(watchDev, "#.##") + "%", text_color=watchColor, bgcolor=watchBg, text_size=watchTxtSize)
+        table.cell(watch, 3, row, watchTrend, text_color=watchColor, bgcolor=watchBg, text_size=watchTxtSize)
+
+//================ YEAR AVERAGE + SD ADDON =================
+showYearSD = input.bool(true, "Show 1Y Mean + SD")
+yearLen    = input.int(250, "Year Length (Days)")
+
+yearMean = ta.sma(close, yearLen)
+yearSD   = ta.stdev(close, yearLen)
+
+sd1Up = yearMean + yearSD
+sd1Dn = yearMean - yearSD
+sd2Up = yearMean + yearSD * 2
+sd2Dn = yearMean - yearSD * 2
+
+plot(showYearSD ? yearMean : na, "1Y Mean", color=meanColor, linewidth=2, style=plot.style_stepline)
+plot(showYearSD ? sd1Up : na, "+1 SD", color=sd1Color, style=plot.style_stepline)
+plot(showYearSD ? sd1Dn : na, "-1 SD", color=sd1Color, style=plot.style_stepline)
+plot(showYearSD ? sd2Up : na, "+2 SD", color=sd2UpColor, style=plot.style_stepline)
+plot(showYearSD ? sd2Dn : na, "-2 SD", color=sd2DnColor, style=plot.style_stepline)
