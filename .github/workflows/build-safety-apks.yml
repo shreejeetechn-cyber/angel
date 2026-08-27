@@ -21,13 +21,13 @@ jobs:
           gradle-version: '8.11.1'
       - name: Build client APK
         run: gradle -p safety_tool/client assembleDebug --stacktrace
-      - name: Build viewer APK
-        run: gradle -p safety_tool/viewer assembleDebug --stacktrace
+      - name: Build server APK
+        run: gradle -p safety_tool/server assembleDebug --stacktrace
       - name: Collect APKs
         run: |
           mkdir -p out
           cp safety_tool/client/app/build/outputs/apk/debug/app-debug.apk out/SafetyClient.apk
-          cp safety_tool/viewer/app/build/outputs/apk/debug/app-debug.apk out/ServerViewer.apk
+          cp safety_tool/server/app/build/outputs/apk/debug/app-debug.apk out/SafetyServerViewer.apk
       - uses: actions/upload-artifact@v4
         with:
           name: safety-apks
