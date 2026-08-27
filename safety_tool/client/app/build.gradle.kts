@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.safetyclient"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.2-test"
+        versionCode = 2
+        versionName = "0.3-test"
     }
 
     compileOptions {
