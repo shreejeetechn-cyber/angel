@@ -89,7 +89,6 @@ object Net {
 
     fun sendHeartbeat(ctx: Context, battery: Int, network: String, pendingAudio: Int, pendingLocations: Int, recording: Boolean): Boolean {
         val b = base(ctx) ?: return false
-        if (!isRelay(b)) return true
         return try {
             val body = JSONObject().apply {
                 put("ts", java.time.Instant.now().toString())
@@ -99,7 +98,8 @@ object Net {
                 put("pending_locations", pendingLocations)
                 put("recording", recording)
             }.toString().toByteArray()
-            val c = (URL(b + "/api/v1/client/heartbeat").openConnection() as HttpURLConnection).apply {
+            val path = if (isRelay(b)) "/api/v1/client/heartbeat" else "/heartbeat"
+            val c = (URL(b + path).openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 doOutput = true
                 common(ctx, this)
@@ -108,8 +108,12 @@ object Net {
             }
             c.outputStream.use { it.write(body) }
             val ok = c.responseCode in 200..299
+            if (!ok) prefs(ctx).edit().putString("net_error", "Heartbeat HTTP ${c.responseCode}").apply()
             c.disconnect()
             ok
-        } catch (_: Exception) { false }
+        } catch (e: Exception) {
+            prefs(ctx).edit().putString("net_error", "Heartbeat ${e.javaClass.simpleName}: ${e.message ?: "network error"}").apply()
+            false
+        }
     }
 }
