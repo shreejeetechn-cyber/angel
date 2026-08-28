@@ -10,8 +10,10 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.InputType
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
@@ -23,44 +25,94 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Collections
 import java.util.Locale
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : Activity() {
     private lateinit var status: TextView
+    private lateinit var clientStatus: TextView
     private lateinit var locationInfo: TextView
     private lateinit var history: TextView
+    private lateinit var relayUrl: EditText
+    private lateinit var token: EditText
     private lateinit var list: ListView
+
     private var files: List<File> = emptyList()
     private var player: MediaPlayer? = null
     private var latestLat: Double? = null
     private var latestLon: Double? = null
     private var historyVisible = false
+    private var lastRemotePoll = 0L
+    private val syncBusy = AtomicBoolean(false)
+    private val io = Executors.newSingleThreadExecutor()
     private val handler = Handler(Looper.getMainLooper())
+
     private val refreshTask = object : Runnable {
         override fun run() {
             refreshAudio()
             refreshLocation()
-            handler.postDelayed(this, 3000)
+            refreshClientStatus()
+            val now = System.currentTimeMillis()
+            if (now - lastRemotePoll >= 30000L) {
+                lastRemotePoll = now
+                syncInternet(false)
+            }
+            handler.postDelayed(this, 3000L)
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val prefs = getSharedPreferences("cfg", MODE_PRIVATE)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(32, 48, 32, 32)
+            setPadding(32, 44, 32, 28)
         }
 
-        status = TextView(this).apply { textSize = 19f }
+        root.addView(TextView(this).apply { text = "Safety Viewer v0.4"; textSize = 24f })
+        status = TextView(this).apply { textSize = 15f; setPadding(0, 8, 0, 10) }
         root.addView(status)
 
+        relayUrl = EditText(this).apply {
+            hint = "HTTPS relay URL (remote mode)"
+            setText(prefs.getString("relay_url", ""))
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+        }
+        root.addView(relayUrl)
+
+        token = EditText(this).apply {
+            hint = "Pair token"
+            setText(prefs.getString("pair_token", "DEMO-PAIR-2026"))
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        root.addView(token)
+
         root.addView(Button(this).apply {
-            text = "START SERVER"
-            setOnClickListener { requestAndStart() }
+            text = "SAVE / SYNC INTERNET"
+            setOnClickListener {
+                prefs.edit()
+                    .putString("relay_url", relayUrl.text.toString().trim())
+                    .putString("pair_token", token.text.toString())
+                    .apply()
+                syncInternet(true)
+            }
         })
 
+        root.addView(Button(this).apply {
+            text = "START LAN SERVER"
+            setOnClickListener { requestAndStartLocal() }
+        })
+
+        clientStatus = TextView(this).apply {
+            textSize = 15f
+            setPadding(0, 12, 0, 10)
+            text = "Client status: waiting for internet sync"
+        }
+        root.addView(clientStatus)
+
         locationInfo = TextView(this).apply {
-            textSize = 17f
-            setPadding(0, 18, 0, 10)
+            textSize = 16f
+            setPadding(0, 10, 0, 8)
             text = "CLIENT LOCATION\nWaiting for first location..."
         }
         root.addView(locationInfo)
@@ -69,7 +121,6 @@ class MainActivity : Activity() {
             text = "OPEN MAP"
             setOnClickListener { openMap() }
         })
-
         root.addView(Button(this).apply {
             text = "LOCATION HISTORY"
             setOnClickListener {
@@ -79,32 +130,35 @@ class MainActivity : Activity() {
         })
 
         history = TextView(this).apply {
-            textSize = 14f
+            textSize = 13f
             visibility = TextView.GONE
-            setPadding(0, 8, 0, 16)
+            setPadding(0, 8, 0, 12)
         }
         root.addView(history)
 
         root.addView(TextView(this).apply {
             text = "RECORDINGS"
             textSize = 17f
-            setPadding(0, 12, 0, 6)
+            setPadding(0, 10, 0, 4)
         })
 
         root.addView(Button(this).apply {
             text = "REFRESH"
-            setOnClickListener { refreshAudio(); refreshLocation() }
+            setOnClickListener {
+                refreshAudio(); refreshLocation(); refreshClientStatus(); syncInternet(true)
+            }
         })
 
         list = ListView(this)
-        list.setOnItemClickListener { _, _, p, _ -> play(files[p]) }
+        list.setOnItemClickListener { _, _, position, _ -> play(files[position]) }
         root.addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
 
         setContentView(root)
-        status.text = "Phone 2 IP: ${localIp()}  Port: 8080"
-        requestAndStart()
+        status.text = "LAN: ${localIp()}:8080 • Internet relay: ${if (relayUrl.text.isNullOrBlank()) "not configured" else "configured"}"
+        requestAndStartLocal()
         refreshAudio()
         refreshLocation()
+        refreshClientStatus()
     }
 
     override fun onResume() {
@@ -117,27 +171,61 @@ class MainActivity : Activity() {
         super.onPause()
     }
 
-    private fun requestAndStart() {
+    private fun requestAndStartLocal() {
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 9)
             return
         }
+        getSharedPreferences("cfg", MODE_PRIVATE).edit().putString("pair_token", token.text.toString()).apply()
         val i = Intent(this, ServerService::class.java)
         if (Build.VERSION.SDK_INT >= 26) startForegroundService(i) else startService(i)
-        status.text = "Server active: ${localIp()}:8080"
+        status.text = "LAN server active: ${localIp()}:8080"
     }
 
-    override fun onRequestPermissionsResult(r: Int, p: Array<out String>, g: IntArray) {
-        super.onRequestPermissionsResult(r, p, g)
-        if (r == 9) requestAndStart()
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 9) requestAndStartLocal()
+    }
+
+    private fun syncInternet(force: Boolean) {
+        if (relayUrl.text.toString().trim().isBlank()) {
+            if (force) status.text = "Internet relay URL not configured; LAN mode still available"
+            return
+        }
+        if (!syncBusy.compareAndSet(false, true)) return
+        getSharedPreferences("cfg", MODE_PRIVATE).edit()
+            .putString("relay_url", relayUrl.text.toString().trim())
+            .putString("pair_token", token.text.toString())
+            .apply()
+        io.submit {
+            val result = RelayClient.sync(this)
+            runOnUiThread {
+                status.text = result + "\nLAN: ${localIp()}:8080"
+                refreshAudio()
+                refreshLocation()
+                refreshClientStatus()
+            }
+            syncBusy.set(false)
+        }
+    }
+
+    private fun refreshClientStatus() {
+        val value = getSharedPreferences("cfg", MODE_PRIVATE).getString("remote_status", "") ?: ""
+        clientStatus.text = if (value.isBlank()) "Client status: no relay heartbeat received yet" else value
     }
 
     private fun refreshAudio() {
-        val d = File(filesDir, "audio").apply { mkdirs() }
-        files = d.listFiles { f -> f.extension == "enc" }?.sortedByDescending { it.lastModified() } ?: emptyList()
+        val dir = File(filesDir, "audio").apply { mkdirs() }
+        files = dir.listFiles { f -> f.extension == "enc" }?.sortedByDescending { it.lastModified() } ?: emptyList()
         list.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, files.map {
-            val m = File(d, "${it.nameWithoutExtension}.json")
-            if (m.exists()) "${it.nameWithoutExtension.take(8)}  •  ${it.length() / 1024} KB" else it.name
+            val meta = File(dir, "${it.nameWithoutExtension}.json")
+            if (meta.exists()) {
+                try {
+                    val j = JSONObject(meta.readText())
+                    val started = prettyTime(j.optString("started_at", ""))
+                    "$started • ${it.length() / 1024} KB"
+                } catch (_: Exception) { "${it.nameWithoutExtension.take(8)} • ${it.length() / 1024} KB" }
+            } else it.name
         })
     }
 
@@ -165,7 +253,7 @@ class MainActivity : Activity() {
 
         if (historyVisible) {
             history.visibility = TextView.VISIBLE
-            history.text = lines.takeLast(20).asReversed().mapNotNull { line ->
+            history.text = lines.takeLast(30).asReversed().mapNotNull { line ->
                 try {
                     val j = JSONObject(line)
                     val t = prettyTime(j.optString("ts", ""))
@@ -176,9 +264,7 @@ class MainActivity : Activity() {
                     "$t  ${String.format(Locale.US, "%.5f", lat)}, ${String.format(Locale.US, "%.5f", lon)}$aText"
                 } catch (_: Exception) { null }
             }.joinToString("\n")
-        } else {
-            history.visibility = TextView.GONE
-        }
+        } else history.visibility = TextView.GONE
     }
 
     private fun openMap() {
@@ -189,19 +275,14 @@ class MainActivity : Activity() {
             return
         }
         val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon(Client)")
-        try {
-            startActivity(Intent(Intent.ACTION_VIEW, uri))
-        } catch (e: Exception) {
-            status.text = "No map app available"
-        }
+        try { startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+        catch (_: Exception) { status.text = "No map app available" }
     }
 
-    private fun prettyTime(raw: String): String {
-        return try {
-            val z = Instant.parse(raw).atZone(ZoneId.systemDefault())
-            DateTimeFormatter.ofPattern("dd MMM, hh:mm:ss a").format(z)
-        } catch (_: Exception) { raw.ifBlank { "unknown" } }
-    }
+    private fun prettyTime(raw: String): String = try {
+        val z = Instant.parse(raw).atZone(ZoneId.systemDefault())
+        DateTimeFormatter.ofPattern("dd MMM, hh:mm:ss a").format(z)
+    } catch (_: Exception) { raw.ifBlank { "unknown" } }
 
     private fun play(enc: File) {
         try { player?.release() } catch (_: Exception) {}
@@ -214,8 +295,7 @@ class MainActivity : Activity() {
                     try { tmp.delete() } catch (_: Exception) {}
                     status.text = "Playback complete"
                 }
-                prepare()
-                start()
+                prepare(); start()
             }
             status.text = "Playing ${enc.nameWithoutExtension.take(8)}"
         } catch (e: Exception) {
@@ -223,17 +303,16 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun localIp(): String {
-        return try {
-            Collections.list(NetworkInterface.getNetworkInterfaces())
-                .flatMap { Collections.list(it.inetAddresses) }
-                .firstOrNull { !it.isLoopbackAddress && it.hostAddress?.contains(':') == false }
-                ?.hostAddress ?: "unknown"
-        } catch (_: Exception) { "unknown" }
-    }
+    private fun localIp(): String = try {
+        Collections.list(NetworkInterface.getNetworkInterfaces())
+            .flatMap { Collections.list(it.inetAddresses) }
+            .firstOrNull { !it.isLoopbackAddress && it.hostAddress?.contains(':') == false }
+            ?.hostAddress ?: "unknown"
+    } catch (_: Exception) { "unknown" }
 
     override fun onDestroy() {
         handler.removeCallbacks(refreshTask)
+        io.shutdownNow()
         try { player?.release() } catch (_: Exception) {}
         super.onDestroy()
     }
