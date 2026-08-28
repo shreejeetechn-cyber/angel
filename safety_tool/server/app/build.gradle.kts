@@ -9,8 +9,8 @@ android {
         applicationId = "com.example.safetyserver"
         minSdk = 29
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.5-dashboard"
+        versionCode = 5
+        versionName = "0.6-server-ui"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
