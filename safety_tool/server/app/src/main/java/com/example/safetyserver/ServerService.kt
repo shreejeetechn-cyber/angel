@@ -9,11 +9,15 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Base64
+import org.json.JSONObject
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
 import java.net.ServerSocket
 import java.net.Socket
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -77,26 +81,62 @@ class ServerService : Service() {
                 }
                 if (headers["authorization"] != expectedToken()) { respond(out, 401, "unauthorized"); return }
                 val len = headers["content-length"]?.toIntOrNull() ?: 0
+                val deviceId = headers["x-device-id"].orEmpty().ifBlank { "LAN client" }
                 when (path) {
                     "/audio" -> {
                         val metaB64 = headers["x-meta"] ?: ""
                         val meta = String(Base64.decode(metaB64, Base64.DEFAULT))
-                        val id = org.json.JSONObject(meta).getString("id")
+                        val id = JSONObject(meta).getString("id")
                         val dir = File(filesDir, "audio").apply { mkdirs() }
                         File(dir, "$id.json").writeText(meta)
                         File(dir, "$id.enc").outputStream().use { copyN(input, it, len) }
+                        markLanSeen(deviceId, null)
                         respond(out, 200, "ok")
                     }
                     "/location" -> {
                         val body = ByteArray(len)
                         readFully(input, body)
                         File(filesDir, "locations.jsonl").appendText(String(body) + "\n")
+                        markLanSeen(deviceId, null)
+                        respond(out, 200, "ok")
+                    }
+                    "/heartbeat" -> {
+                        val body = ByteArray(len)
+                        readFully(input, body)
+                        val json = try { JSONObject(String(body)) } catch (_: Exception) { JSONObject() }
+                        markLanSeen(deviceId, json)
                         respond(out, 200, "ok")
                     }
                     else -> respond(out, 404, "not found")
                 }
             } catch (_: Exception) {}
         }
+    }
+
+    private fun markLanSeen(deviceId: String, heartbeat: JSONObject?) {
+        val now = System.currentTimeMillis()
+        val shortId = if (deviceId.length > 10) deviceId.take(8) else deviceId
+        val battery = heartbeat?.optInt("battery_pct", -1) ?: -1
+        val network = heartbeat?.optString("network", "LAN")?.ifBlank { "LAN" } ?: "LAN"
+        val recording = heartbeat?.optBoolean("recording", false)
+        val pendingAudio = heartbeat?.optInt("pending_audio", 0) ?: 0
+        val pendingLocation = heartbeat?.optInt("pending_locations", 0) ?: 0
+        val seen = DateTimeFormatter.ofPattern("hh:mm:ss a")
+            .format(Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()))
+
+        val status = buildString {
+            append("Client: ").append(shortId).append("\n")
+            append("LAN: ONLINE • ").append(network)
+            if (battery >= 0) append(" • Battery ").append(battery).append('%')
+            append("\nRecording: ").append(if (recording) "Active" else "Idle")
+            append(" • Pending A/L ").append(pendingAudio).append('/').append(pendingLocation)
+            append("\nLast seen: ").append(seen)
+        }
+        getSharedPreferences("cfg", MODE_PRIVATE).edit()
+            .putString("remote_status", status)
+            .putLong("lan_last_seen_ms", now)
+            .putString("lan_device_id", deviceId)
+            .apply()
     }
 
     private fun readLine(input: BufferedInputStream): String? {
