@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.safetyclient"
         minSdk = 29
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.5-dashboard"
+        versionCode = 5
+        versionName = "0.6-lan-heartbeat"
     }
 
     compileOptions {
