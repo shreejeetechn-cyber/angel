@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.InputType
+import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -41,6 +42,12 @@ class MainActivity : Activity() {
     private lateinit var token: EditText
     private lateinit var recordingsBox: LinearLayout
     private lateinit var recordingsCount: TextView
+    private lateinit var homePanel: LinearLayout
+    private lateinit var recordingsPanel: LinearLayout
+    private lateinit var settingsPanel: LinearLayout
+    private lateinit var homeTab: Button
+    private lateinit var recordingsTab: Button
+    private lateinit var settingsTab: Button
 
     private var files: List<File> = emptyList()
     private var player: MediaPlayer? = null
@@ -71,51 +78,246 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         val prefs = getSharedPreferences("cfg", MODE_PRIVATE)
 
-        val scroll = ScrollView(this).apply { isFillViewport = true }
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            setBackgroundColor(Color.rgb(244, 247, 250))
+        }
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(24), dp(20), dp(28))
-            setBackgroundColor(Color.rgb(248, 250, 252))
+            setPadding(dp(18), dp(20), dp(18), dp(28))
         }
         scroll.addView(root)
 
-        root.addView(TextView(this).apply {
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(2), dp(2), dp(2), dp(16))
+        }
+        header.addView(TextView(this).apply {
             text = "Safety Viewer"
-            textSize = 28f
-            setTextColor(Color.rgb(20, 31, 45))
+            textSize = 29f
+            setTextColor(Color.rgb(17, 31, 46))
             setTypeface(typeface, Typeface.BOLD)
         })
-        root.addView(TextView(this).apply {
-            text = "Client status, location and encrypted recordings"
+        header.addView(TextView(this).apply {
+            text = "Server dashboard • v0.6 UI"
             textSize = 14f
-            setTextColor(Color.rgb(91, 105, 120))
-            setPadding(0, dp(4), 0, dp(18))
+            setTextColor(Color.rgb(92, 108, 124))
+            setPadding(0, dp(4), 0, 0)
+        })
+        root.addView(header)
+
+        val tabs = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            background = rounded(Color.WHITE, 14, Color.rgb(221, 228, 235))
+            setPadding(dp(4), dp(4), dp(4), dp(4))
+        }
+        homeTab = navButton("Home") { showTab(0) }
+        recordingsTab = navButton("Recordings") { showTab(1) }
+        settingsTab = navButton("Settings") { showTab(2) }
+        tabs.addView(homeTab, LinearLayout.LayoutParams(0, dp(46), 1f))
+        tabs.addView(recordingsTab, LinearLayout.LayoutParams(0, dp(46), 1f))
+        tabs.addView(settingsTab, LinearLayout.LayoutParams(0, dp(46), 1f))
+        root.addView(tabs, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = dp(14)
         })
 
+        homePanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        recordingsPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        settingsPanel = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(homePanel)
+        root.addView(recordingsPanel)
+        root.addView(settingsPanel)
+
+        buildHome(homePanel)
+        buildRecordings(recordingsPanel)
+        buildSettings(settingsPanel, prefs)
+
+        setContentView(scroll)
+        showTab(0)
+        updateConnectionSummary()
+        requestAndStartLocal()
+        refreshAudio()
+        refreshLocation()
+        refreshClientStatus()
+    }
+
+    private fun buildHome(parent: LinearLayout) {
         val overview = card().apply {
-            addView(sectionTitle("CONNECTION OVERVIEW"))
+            val top = LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            top.addView(TextView(this@MainActivity).apply {
+                text = "CONNECTION"
+                textSize = 12f
+                setTextColor(Color.rgb(91, 105, 120))
+                setTypeface(typeface, Typeface.BOLD)
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            top.addView(TextView(this@MainActivity).apply {
+                text = "AUTO REFRESH"
+                textSize = 11.5f
+                setTextColor(Color.rgb(33, 129, 79))
+                setTypeface(typeface, Typeface.BOLD)
+                background = pillBackground(Color.rgb(232, 248, 239), Color.rgb(181, 225, 199))
+                setPadding(dp(10), dp(5), dp(10), dp(5))
+            })
+            addView(top)
+
             connectionSummary = TextView(this@MainActivity).apply {
-                textSize = 16f
-                setTextColor(Color.rgb(30, 45, 60))
-                setPadding(0, dp(8), 0, dp(8))
+                textSize = 18f
+                setTextColor(Color.rgb(25, 41, 58))
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, dp(14), 0, dp(8))
             }
             addView(connectionSummary)
+
             status = TextView(this@MainActivity).apply {
+                text = "Starting LAN receiver..."
                 textSize = 13.5f
                 setTextColor(Color.rgb(91, 105, 120))
             }
             addView(status)
         }
-        root.addView(overview, cardParams())
+        parent.addView(overview, cardParams())
 
-        val connectionCard = card().apply {
+        val health = card().apply {
+            addView(sectionTitle("CLIENT HEALTH"))
+            clientStatus = TextView(this@MainActivity).apply {
+                text = "Waiting for client status..."
+                textSize = 15.5f
+                setTextColor(Color.rgb(29, 45, 61))
+                setPadding(0, dp(12), 0, 0)
+                setLineSpacing(0f, 1.12f)
+            }
+            addView(clientStatus)
+        }
+        parent.addView(health, cardParams())
+
+        val locationCard = card().apply {
+            val titleRow = LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            titleRow.addView(sectionTitle("LATEST LOCATION"), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            titleRow.addView(TextView(this@MainActivity).apply {
+                text = "GPS"
+                textSize = 11f
+                setTextColor(Color.rgb(31, 111, 235))
+                setTypeface(typeface, Typeface.BOLD)
+            })
+            addView(titleRow)
+
+            locationInfo = TextView(this@MainActivity).apply {
+                text = "Waiting for first location..."
+                textSize = 15.5f
+                setTextColor(Color.rgb(29, 45, 61))
+                setPadding(0, dp(12), 0, dp(14))
+                setLineSpacing(0f, 1.12f)
+            }
+            addView(locationInfo)
+
+            val row = LinearLayout(this@MainActivity).apply { orientation = LinearLayout.HORIZONTAL }
+            row.addView(primaryButton("Open Map", Color.rgb(31, 111, 235)) { openMap() }, LinearLayout.LayoutParams(0, dp(50), 1f).apply { marginEnd = dp(6) })
+            row.addView(outlineButton("History") {
+                historyVisible = !historyVisible
+                refreshLocation()
+            }, LinearLayout.LayoutParams(0, dp(50), 1f).apply { marginStart = dp(6) })
+            addView(row)
+
+            history = TextView(this@MainActivity).apply {
+                textSize = 13f
+                setTextColor(Color.rgb(75, 91, 107))
+                visibility = View.GONE
+                setPadding(0, dp(14), 0, 0)
+            }
+            addView(history)
+        }
+        parent.addView(locationCard, cardParams())
+
+        val actions = card().apply {
+            addView(sectionTitle("QUICK ACTIONS"))
+            addView(helper("Use Refresh for local data. Internet Sync also checks the configured relay."))
+            val row = LinearLayout(this@MainActivity).apply { orientation = LinearLayout.HORIZONTAL }
+            row.addView(outlineButton("Refresh") {
+                refreshAudio(); refreshLocation(); refreshClientStatus(); updateConnectionSummary()
+                status.text = "Local dashboard refreshed"
+            }, LinearLayout.LayoutParams(0, dp(50), 1f).apply { marginEnd = dp(6) })
+            row.addView(primaryButton("Internet Sync", Color.rgb(31, 111, 235)) {
+                syncInternet(true)
+            }, LinearLayout.LayoutParams(0, dp(50), 1f).apply { marginStart = dp(6) })
+            addView(row)
+        }
+        parent.addView(actions, cardParams())
+    }
+
+    private fun buildRecordings(parent: LinearLayout) {
+        val recordingsCard = card().apply {
+            val titleRow = LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            titleRow.addView(TextView(this@MainActivity).apply {
+                text = "Recordings"
+                textSize = 22f
+                setTextColor(Color.rgb(20, 34, 50))
+                setTypeface(typeface, Typeface.BOLD)
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            recordingsCount = TextView(this@MainActivity).apply {
+                text = "0 saved"
+                textSize = 12.5f
+                setTextColor(Color.rgb(91, 105, 120))
+                setTypeface(typeface, Typeface.BOLD)
+                background = pillBackground(Color.rgb(241, 245, 249), Color.rgb(221, 228, 235))
+                setPadding(dp(10), dp(6), dp(10), dp(6))
+            }
+            titleRow.addView(recordingsCount)
+            addView(titleRow)
+
+            addView(helper("Encrypted recordings received by this Viewer appear here. Tap any item to decrypt and play locally."))
+            addView(outlineButton("Refresh recordings") {
+                refreshAudio(); syncInternet(true)
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)))
+
+            recordingsBox = LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, dp(12), 0, 0)
+            }
+            addView(recordingsBox)
+        }
+        parent.addView(recordingsCard, cardParams())
+    }
+
+    private fun buildSettings(parent: LinearLayout, prefs: android.content.SharedPreferences) {
+        val lan = card().apply {
+            addView(sectionTitle("LAN SERVER"))
+            addView(TextView(this@MainActivity).apply {
+                text = "Same Wi-Fi / hotspot mode"
+                textSize = 18f
+                setTextColor(Color.rgb(25, 41, 58))
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, dp(10), 0, dp(4))
+            })
+            addView(helper("Client destination should be http://THIS-PHONE-IP:8080 when both phones are on the same reachable local network."))
+            addView(primaryButton("Start LAN Server", Color.rgb(42, 142, 85)) { requestAndStartLocal() }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50)))
+        }
+        parent.addView(lan, cardParams())
+
+        val relay = card().apply {
             addView(sectionTitle("INTERNET / SIM RELAY"))
-            addView(helper("Leave this empty for same-Wi-Fi LAN testing. For remote SIM/any-Wi-Fi use, enter the public HTTPS relay URL."))
+            addView(TextView(this@MainActivity).apply {
+                text = "Remote connection"
+                textSize = 18f
+                setTextColor(Color.rgb(25, 41, 58))
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, dp(10), 0, dp(4))
+            })
+            addView(helper("For SIM data or different Wi-Fi networks, enter your deployed public HTTPS relay URL."))
 
+            addView(fieldLabel("Relay URL"))
             relayUrl = EditText(this@MainActivity).apply {
-                hint = "https://relay.example.com"
+                hint = "https://your-relay.example"
                 setText(prefs.getString("relay_url", ""))
-                textSize = 16f
+                textSize = 15.5f
                 inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
                 setSingleLine(true)
                 background = fieldBackground()
@@ -123,16 +325,11 @@ class MainActivity : Activity() {
             }
             addView(relayUrl, fieldParams())
 
-            addView(TextView(this@MainActivity).apply {
-                text = "Pair token"
-                textSize = 13f
-                setTextColor(Color.rgb(91, 105, 120))
-                setPadding(0, dp(14), 0, dp(6))
-            })
+            addView(fieldLabel("Pair token").apply { setPadding(0, dp(14), 0, dp(6)) })
             token = EditText(this@MainActivity).apply {
                 hint = "Pair token"
                 setText(prefs.getString("pair_token", "DEMO-PAIR-2026"))
-                textSize = 16f
+                textSize = 15.5f
                 inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 setSingleLine(true)
                 background = fieldBackground()
@@ -140,103 +337,37 @@ class MainActivity : Activity() {
             }
             addView(token, fieldParams())
 
-            val row = LinearLayout(this@MainActivity).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setPadding(0, dp(12), 0, 0)
-            }
-            row.addView(actionButton("Sync Internet", Color.rgb(31, 111, 235)) {
+            addView(primaryButton("Save & Sync Internet", Color.rgb(31, 111, 235)) {
                 prefs.edit()
                     .putString("relay_url", relayUrl.text.toString().trim())
                     .putString("pair_token", token.text.toString())
                     .apply()
                 syncInternet(true)
-            }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { marginEnd = dp(6) })
-
-            row.addView(actionButton("Start LAN", Color.rgb(42, 142, 85)) {
-                requestAndStartLocal()
-            }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { marginStart = dp(6) })
-            addView(row)
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(52)).apply { topMargin = dp(14) })
         }
-        root.addView(connectionCard, cardParams())
+        parent.addView(relay, cardParams())
 
-        val clientCard = card().apply {
-            addView(sectionTitle("CLIENT HEALTH"))
-            clientStatus = TextView(this@MainActivity).apply {
-                textSize = 15f
-                setTextColor(Color.rgb(30, 45, 60))
-                setPadding(0, dp(8), 0, 0)
-                text = "No client heartbeat received yet"
-            }
-            addView(clientStatus)
-        }
-        root.addView(clientCard, cardParams())
-
-        val locationCard = card().apply {
-            addView(sectionTitle("CLIENT LOCATION"))
-            locationInfo = TextView(this@MainActivity).apply {
-                textSize = 15.5f
-                setTextColor(Color.rgb(30, 45, 60))
-                setPadding(0, dp(8), 0, dp(10))
-                text = "Waiting for first location..."
-            }
-            addView(locationInfo)
-
-            val row = LinearLayout(this@MainActivity).apply { orientation = LinearLayout.HORIZONTAL }
-            row.addView(outlineButton("Open Map") { openMap() }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginEnd = dp(6) })
-            row.addView(outlineButton("History") {
-                historyVisible = !historyVisible
-                refreshLocation()
-            }, LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginStart = dp(6) })
-            addView(row)
-
-            history = TextView(this@MainActivity).apply {
-                textSize = 13f
-                setTextColor(Color.rgb(75, 91, 107))
-                visibility = View.GONE
-                setPadding(0, dp(12), 0, 0)
-            }
-            addView(history)
-        }
-        root.addView(locationCard, cardParams())
-
-        val recordingsCard = card().apply {
-            val titleRow = LinearLayout(this@MainActivity).apply { orientation = LinearLayout.HORIZONTAL }
-            titleRow.addView(sectionTitle("RECORDINGS"), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            recordingsCount = TextView(this@MainActivity).apply {
-                text = "0"
-                textSize = 13f
-                setTextColor(Color.rgb(91, 105, 120))
-                setTypeface(typeface, Typeface.BOLD)
-            }
-            titleRow.addView(recordingsCount)
-            addView(titleRow)
-
-            addView(helper("Tap a recording to decrypt and play it on this Viewer phone."))
-            addView(outlineButton("Refresh now") {
-                refreshAudio(); refreshLocation(); refreshClientStatus(); syncInternet(true)
-            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)))
-
-            recordingsBox = LinearLayout(this@MainActivity).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(0, dp(10), 0, 0)
-            }
-            addView(recordingsBox)
-        }
-        root.addView(recordingsCard, cardParams())
-
-        root.addView(TextView(this).apply {
-            text = "LAN works only when both phones can reach each other on the same local network. Internet mode requires a configured HTTPS relay."
+        parent.addView(TextView(this).apply {
+            text = "LAN mode works locally. SIM / different-Wi-Fi mode requires a reachable HTTPS relay backend."
             textSize = 12.5f
             setTextColor(Color.rgb(100, 113, 128))
-            setPadding(dp(4), dp(2), dp(4), 0)
+            setPadding(dp(4), 0, dp(4), dp(8))
         })
+    }
 
-        setContentView(scroll)
-        updateConnectionSummary()
-        requestAndStartLocal()
-        refreshAudio()
-        refreshLocation()
-        refreshClientStatus()
+    private fun showTab(index: Int) {
+        homePanel.visibility = if (index == 0) View.VISIBLE else View.GONE
+        recordingsPanel.visibility = if (index == 1) View.VISIBLE else View.GONE
+        settingsPanel.visibility = if (index == 2) View.VISIBLE else View.GONE
+        styleNavButton(homeTab, index == 0)
+        styleNavButton(recordingsTab, index == 1)
+        styleNavButton(settingsTab, index == 2)
+        if (index == 1) refreshAudio()
+        if (index == 0) {
+            refreshLocation()
+            refreshClientStatus()
+            updateConnectionSummary()
+        }
     }
 
     override fun onResume() {
@@ -254,26 +385,31 @@ class MainActivity : Activity() {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 9)
             return
         }
-        getSharedPreferences("cfg", MODE_PRIVATE).edit().putString("pair_token", token.text.toString()).apply()
+        if (::token.isInitialized) {
+            getSharedPreferences("cfg", MODE_PRIVATE).edit().putString("pair_token", token.text.toString()).apply()
+        }
         val i = Intent(this, ServerService::class.java)
         if (Build.VERSION.SDK_INT >= 26) startForegroundService(i) else startService(i)
-        status.text = "LAN receiver is active"
+        if (::status.isInitialized) status.text = "LAN receiver is active"
         updateConnectionSummary()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 9) requestAndStartLocal()
+        if (requestCode == 9 && grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+            requestAndStartLocal()
+        }
     }
 
     private fun syncInternet(force: Boolean) {
+        if (!::relayUrl.isInitialized) return
         if (relayUrl.text.toString().trim().isBlank()) {
-            if (force) status.text = "Internet relay is not configured; LAN mode remains available"
+            if (force && ::status.isInitialized) status.text = "Internet relay is not configured; LAN mode remains available"
             updateConnectionSummary()
             return
         }
         if (!syncBusy.compareAndSet(false, true)) return
-        status.text = "Syncing Internet relay..."
+        if (::status.isInitialized) status.text = "Syncing Internet relay..."
         getSharedPreferences("cfg", MODE_PRIVATE).edit()
             .putString("relay_url", relayUrl.text.toString().trim())
             .putString("pair_token", token.text.toString())
@@ -281,7 +417,7 @@ class MainActivity : Activity() {
         io.submit {
             val result = RelayClient.sync(this)
             runOnUiThread {
-                status.text = result
+                if (::status.isInitialized) status.text = result
                 refreshAudio()
                 refreshLocation()
                 refreshClientStatus()
@@ -292,17 +428,22 @@ class MainActivity : Activity() {
     }
 
     private fun updateConnectionSummary() {
-        if (!::connectionSummary.isInitialized || !::relayUrl.isInitialized) return
-        val relayConfigured = relayUrl.text.toString().trim().startsWith("https://", true)
-        connectionSummary.text = "LAN  ${localIp()}:8080\nInternet relay  ${if (relayConfigured) "Configured" else "Not configured"}"
+        if (!::connectionSummary.isInitialized) return
+        val savedRelay = if (::relayUrl.isInitialized) relayUrl.text.toString().trim() else getSharedPreferences("cfg", MODE_PRIVATE).getString("relay_url", "")?.trim().orEmpty()
+        val relayConfigured = savedRelay.startsWith("https://", true)
+        connectionSummary.text = "LAN  ${localIp()}:8080\nRelay  ${if (relayConfigured) "configured" else "not configured"}"
     }
 
     private fun refreshClientStatus() {
+        if (!::clientStatus.isInitialized) return
         val value = getSharedPreferences("cfg", MODE_PRIVATE).getString("remote_status", "") ?: ""
-        clientStatus.text = if (value.isBlank()) "No Internet-relay heartbeat received yet. LAN audio/location can still arrive directly." else value
+        clientStatus.text = if (value.isBlank()) {
+            "No Internet-relay heartbeat yet.\nLAN audio and location can still arrive directly."
+        } else value
     }
 
     private fun refreshAudio() {
+        if (!::recordingsBox.isInitialized || !::recordingsCount.isInitialized) return
         val dir = File(filesDir, "audio").apply { mkdirs() }
         files = dir.listFiles { f -> f.extension == "enc" }?.sortedByDescending { it.lastModified() } ?: emptyList()
         recordingsCount.text = "${files.size} saved"
@@ -311,39 +452,63 @@ class MainActivity : Activity() {
         if (files.isEmpty()) {
             recordingsBox.addView(TextView(this).apply {
                 text = "No recordings received yet"
-                textSize = 14f
+                textSize = 14.5f
                 setTextColor(Color.rgb(100, 113, 128))
-                setPadding(dp(4), dp(10), dp(4), dp(10))
+                gravity = Gravity.CENTER
+                setPadding(dp(8), dp(24), dp(8), dp(24))
+                background = dashedPlaceholder()
             })
             return
         }
 
-        files.forEach { enc ->
+        files.forEachIndexed { index, enc ->
             val meta = File(dir, "${enc.nameWithoutExtension}.json")
-            val label = if (meta.exists()) {
+            val started = if (meta.exists()) {
                 try {
                     val j = JSONObject(meta.readText())
-                    val started = prettyTime(j.optString("started_at", ""))
-                    "$started\n${enc.length() / 1024} KB encrypted audio"
-                } catch (_: Exception) { "${enc.nameWithoutExtension.take(8)}\n${enc.length() / 1024} KB encrypted audio" }
-            } else "${enc.nameWithoutExtension.take(8)}\n${enc.length() / 1024} KB encrypted audio"
+                    prettyTime(j.optString("started_at", ""))
+                } catch (_: Exception) { enc.nameWithoutExtension.take(8) }
+            } else enc.nameWithoutExtension.take(8)
 
-            recordingsBox.addView(TextView(this).apply {
-                text = label
-                textSize = 14.5f
-                setTextColor(Color.rgb(30, 45, 60))
-                setPadding(dp(14), dp(12), dp(14), dp(12))
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(14), dp(13), dp(12), dp(13))
                 background = listItemBackground()
                 isClickable = true
                 isFocusable = true
                 setOnClickListener { play(enc) }
-            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = dp(8)
+            }
+            val copy = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            copy.addView(TextView(this).apply {
+                text = started
+                textSize = 15f
+                setTextColor(Color.rgb(29, 45, 61))
+                setTypeface(typeface, Typeface.BOLD)
+            })
+            copy.addView(TextView(this).apply {
+                text = "${enc.length() / 1024} KB • encrypted audio"
+                textSize = 12.5f
+                setTextColor(Color.rgb(91, 105, 120))
+                setPadding(0, dp(3), 0, 0)
+            })
+            row.addView(copy, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            row.addView(TextView(this).apply {
+                text = "PLAY"
+                textSize = 12f
+                setTextColor(Color.rgb(31, 111, 235))
+                setTypeface(typeface, Typeface.BOLD)
+                background = pillBackground(Color.rgb(235, 243, 255), Color.rgb(190, 211, 244))
+                setPadding(dp(11), dp(7), dp(11), dp(7))
+            })
+            recordingsBox.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                if (index < files.lastIndex) bottomMargin = dp(8)
             })
         }
     }
 
     private fun refreshLocation() {
+        if (!::locationInfo.isInitialized || !::history.isInitialized) return
         val f = File(filesDir, "locations.jsonl")
         if (!f.exists() || f.length() == 0L) {
             locationInfo.text = "Waiting for first location..."
@@ -360,7 +525,7 @@ class MainActivity : Activity() {
             val provider = j.optString("provider", "")
             val stamp = prettyTime(j.optString("ts", ""))
             val accText = if (accuracy >= 0) String.format(Locale.US, "%.0f m", accuracy) else "unknown"
-            locationInfo.text = "Last update  $stamp\n${String.format(Locale.US, "%.6f", latestLat)}, ${String.format(Locale.US, "%.6f", latestLon)}\nAccuracy  $accText  •  $provider"
+            locationInfo.text = "Updated  $stamp\n${String.format(Locale.US, "%.6f", latestLat)}, ${String.format(Locale.US, "%.6f", latestLon)}\nAccuracy  $accText  •  $provider"
         } catch (e: Exception) {
             locationInfo.text = "Location parse error: ${e.message}"
         }
@@ -385,12 +550,12 @@ class MainActivity : Activity() {
         val lat = latestLat
         val lon = latestLon
         if (lat == null || lon == null) {
-            status.text = "No client location received yet"
+            if (::status.isInitialized) status.text = "No client location received yet"
             return
         }
         val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon(Client)")
         try { startActivity(Intent(Intent.ACTION_VIEW, uri)) }
-        catch (_: Exception) { status.text = "No map app available" }
+        catch (_: Exception) { if (::status.isInitialized) status.text = "No map app available" }
     }
 
     private fun prettyTime(raw: String): String = try {
@@ -407,13 +572,13 @@ class MainActivity : Activity() {
                 setDataSource(tmp.absolutePath)
                 setOnCompletionListener {
                     try { tmp.delete() } catch (_: Exception) {}
-                    status.text = "Playback complete"
+                    if (::status.isInitialized) status.text = "Playback complete"
                 }
                 prepare(); start()
             }
-            status.text = "Playing recording"
+            if (::status.isInitialized) status.text = "Playing recording"
         } catch (e: Exception) {
-            status.text = "Playback error: ${e.message}"
+            if (::status.isInitialized) status.text = "Playback error: ${e.message}"
         }
     }
 
@@ -427,13 +592,13 @@ class MainActivity : Activity() {
     private fun card(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(dp(16), dp(16), dp(16), dp(16))
-        background = cardBackground(Color.WHITE)
+        background = rounded(Color.WHITE, 16, Color.rgb(225, 231, 237))
         elevation = dp(2).toFloat()
     }
 
     private fun sectionTitle(value: String) = TextView(this).apply {
         text = value
-        textSize = 12.5f
+        textSize = 12f
         setTextColor(Color.rgb(91, 105, 120))
         setTypeface(typeface, Typeface.BOLD)
     }
@@ -443,14 +608,43 @@ class MainActivity : Activity() {
         textSize = 13.5f
         setTextColor(Color.rgb(75, 91, 107))
         setPadding(0, dp(8), 0, dp(12))
+        setLineSpacing(0f, 1.08f)
     }
 
-    private fun actionButton(label: String, color: Int, action: () -> Unit) = Button(this).apply {
+    private fun fieldLabel(value: String) = TextView(this).apply {
+        text = value
+        textSize = 13f
+        setTextColor(Color.rgb(75, 91, 107))
+        setPadding(0, dp(6), 0, dp(6))
+        setTypeface(typeface, Typeface.BOLD)
+    }
+
+    private fun navButton(label: String, action: () -> Unit) = Button(this).apply {
         text = label
         isAllCaps = false
-        textSize = 15f
+        textSize = 14f
+        minHeight = 0
+        minWidth = 0
+        setPadding(dp(8), 0, dp(8), 0)
+        setOnClickListener { action() }
+    }
+
+    private fun styleNavButton(button: Button, active: Boolean) {
+        button.setTextColor(if (active) Color.WHITE else Color.rgb(67, 84, 101))
+        button.setTypeface(button.typeface, if (active) Typeface.BOLD else Typeface.NORMAL)
+        button.background = if (active) {
+            rounded(Color.rgb(31, 111, 235), 11, Color.rgb(31, 111, 235))
+        } else {
+            rounded(Color.TRANSPARENT, 11, Color.TRANSPARENT)
+        }
+    }
+
+    private fun primaryButton(label: String, color: Int, action: () -> Unit) = Button(this).apply {
+        text = label
+        isAllCaps = false
+        textSize = 14.5f
         setTextColor(Color.WHITE)
-        background = buttonBackground(color)
+        background = rounded(color, 12, color)
         setOnClickListener { action() }
     }
 
@@ -459,7 +653,7 @@ class MainActivity : Activity() {
         isAllCaps = false
         textSize = 14.5f
         setTextColor(Color.rgb(31, 111, 235))
-        background = outlinedButtonBackground(Color.rgb(31, 111, 235))
+        background = rounded(Color.WHITE, 12, Color.rgb(177, 198, 226))
         setOnClickListener { action() }
     }
 
@@ -469,33 +663,18 @@ class MainActivity : Activity() {
 
     private fun fieldParams() = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(50))
 
-    private fun cardBackground(color: Int) = GradientDrawable().apply {
-        setColor(color)
-        cornerRadius = dp(16).toFloat()
-        setStroke(dp(1), Color.rgb(226, 232, 238))
-    }
+    private fun fieldBackground() = rounded(Color.rgb(249, 251, 253), 12, Color.rgb(207, 216, 225))
 
-    private fun fieldBackground() = GradientDrawable().apply {
-        setColor(Color.rgb(250, 252, 254))
-        cornerRadius = dp(12).toFloat()
-        setStroke(dp(1), Color.rgb(207, 216, 225))
-    }
+    private fun listItemBackground() = rounded(Color.rgb(249, 251, 253), 13, Color.rgb(226, 232, 238))
 
-    private fun buttonBackground(color: Int) = GradientDrawable().apply {
-        setColor(color)
-        cornerRadius = dp(12).toFloat()
-    }
+    private fun dashedPlaceholder() = rounded(Color.rgb(250, 252, 254), 13, Color.rgb(226, 232, 238))
 
-    private fun outlinedButtonBackground(color: Int) = GradientDrawable().apply {
-        setColor(Color.WHITE)
-        cornerRadius = dp(12).toFloat()
-        setStroke(dp(1), color)
-    }
+    private fun pillBackground(fill: Int, stroke: Int) = rounded(fill, 100, stroke)
 
-    private fun listItemBackground() = GradientDrawable().apply {
-        setColor(Color.rgb(249, 251, 253))
-        cornerRadius = dp(12).toFloat()
-        setStroke(dp(1), Color.rgb(226, 232, 238))
+    private fun rounded(fill: Int, radiusDp: Int, stroke: Int) = GradientDrawable().apply {
+        setColor(fill)
+        cornerRadius = dp(radiusDp).toFloat()
+        setStroke(dp(1), stroke)
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
