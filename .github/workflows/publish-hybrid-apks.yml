@@ -1,0 +1,39 @@
+name: Publish Hybrid APKs
+
+on:
+  push:
+    branches: [ chatgpt-hybrid-internet-build ]
+    paths:
+      - 'safety_tool/**'
+      - '.github/workflows/publish-hybrid-apks.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Build client APK
+        run: gradle -p safety_tool/client assembleDebug --stacktrace
+      - name: Build server APK
+        run: gradle -p safety_tool/server assembleDebug --stacktrace
+      - name: Collect APKs
+        run: |
+          mkdir -p out
+          cp safety_tool/client/app/build/outputs/apk/debug/app-debug.apk out/SafetyClient-v0.4-hybrid.apk
+          cp safety_tool/server/app/build/outputs/apk/debug/app-debug.apk out/SafetyServerViewer-v0.4-hybrid.apk
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view safety-v0.4-hybrid >/dev/null 2>&1 || gh release create safety-v0.4-hybrid --title "Safety v0.4 hybrid" --notes "Test build: visible user-started safety session with LAN/HTTPS relay support."
+          gh release upload safety-v0.4-hybrid out/SafetyClient-v0.4-hybrid.apk out/SafetyServerViewer-v0.4-hybrid.apk --clobber

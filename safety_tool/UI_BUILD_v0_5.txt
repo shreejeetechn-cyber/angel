@@ -1,0 +1,1 @@
+v0.5 dashboard build trigger. Visible user-started safety session behavior remains unchanged.
