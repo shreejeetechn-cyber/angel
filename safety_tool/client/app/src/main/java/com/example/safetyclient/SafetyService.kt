@@ -105,7 +105,7 @@ class SafetyService : Service(), LocationListener {
             }
             if (now >= nextHeartbeatAt) {
                 sendHeartbeat()
-                nextHeartbeatAt = now + 60000L
+                nextHeartbeatAt = now + 10000L
             }
             try { Thread.sleep(5000L) } catch (_: Exception) { break }
         }
