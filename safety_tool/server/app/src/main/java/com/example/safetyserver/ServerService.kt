@@ -118,7 +118,7 @@ class ServerService : Service() {
         val shortId = if (deviceId.length > 10) deviceId.take(8) else deviceId
         val battery = heartbeat?.optInt("battery_pct", -1) ?: -1
         val network = heartbeat?.optString("network", "LAN")?.ifBlank { "LAN" } ?: "LAN"
-        val recording = heartbeat?.optBoolean("recording", false)
+        val recording = heartbeat?.optBoolean("recording", false) ?: false
         val pendingAudio = heartbeat?.optInt("pending_audio", 0) ?: 0
         val pendingLocation = heartbeat?.optInt("pending_locations", 0) ?: 0
         val seen = DateTimeFormatter.ofPattern("hh:mm:ss a")
