@@ -1,0 +1,18 @@
+WINGO v5.13.1 — रिलीज़ स्थिति
+================================
+पूरा संशोधित source और Windows build kit।
+Source folder: WINGO_v5.13.1
+ZIP: WINGO_v5.13.1_FULL_SOURCE.zip
+Runtime, install marker और VERSION.txt: 5.13.1
+Windows file/product metadata: 5.13.1.0
+
+18/18 QA समूह PASS; 226 app Python files की syntax जाँच PASS।
+वास्तविक Qt GUI, Dhan Authentication/Settings, background workers, token
+masking और account mismatch पर saved credentials preservation जाँचे गए।
+20 Dhan backend tests mocked/offline हैं। वास्तविक Unified Core HTTP health,
+control readiness और clean shutdown exit 0 PASS; execution LOCKED है।
+
+Windows installer/EXE compile, UAC/DPAPI और वास्तविक broker login यहाँ नहीं चले।
+Dhan live/history routing अभी जुड़ी नहीं है। Matching v5.14.0.16 source की जाँच बाकी है।
+मूल uploaded backup और पिछली releases सुरक्षित हैं।
+अगली रिलीज़ में नया incremental numeric version और नए file/folder names इस्तेमाल करें।

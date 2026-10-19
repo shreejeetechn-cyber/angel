@@ -1,0 +1,183 @@
+WINGO v5.13.1 — Dhan Login और incremental release
+पूरा संशोधित सोर्स और Windows बिल्ड किट
+======================================
+
+यह पैकेज आपके दिए WINGO v5.13 सोर्स पर आधारित है। इसमें ऐप का पूरा सोर्स,
+मौजूदा desktop/web घटक, build scripts, updater, QA और इस fixpack के सुधार हैं।
+यह v5.14.0.16 executable से निकाला गया सोर्स या signed .wupd पैकेज नहीं है।
+Native Windows installer/EXE यहाँ तैयार नहीं हुई है; नीचे की Windows pipeline
+उसे रिलीज मशीन पर बनाएगी। Linux .so परीक्षण आउटपुट Windows binary नहीं हैं
+और इस सोर्स ZIP में शामिल नहीं किए गए हैं।
+
+रिलीज़ naming नियम
+==================
+वर्तमान version: 5.13.1; अगली रिलीज़: 5.13.2।
+Source folder: WINGO_v5.13.1
+Source ZIP: WINGO_v5.13.1_FULL_SOURCE.zip
+रिलीज़ के साथ दिए README, परीक्षण रिपोर्ट, बदलाव सूची और checksum फाइलों
+के नाम में भी v5.13.1 है। हर अगली रिलीज़ में नया नंबर/फ़ोल्डर/ZIP बनेगा।
+पुराने published packages सुरक्षित रहेंगे। नियम AGENTS.md और
+RELEASE_VERSION_POLICY_HINDI.txt में सहेजे गए हैं।
+
+लागू सुधार
+===========
+1. SignalRecord की पूरी detached snapshot copying का खर्च घटाया गया।
+   nested data और ऐतिहासिक रिकॉर्ड सुरक्षित रखे गए हैं।
+2. Signal catalog में revision cache और सीधे ID lookups जोड़े गए। GUI में
+   historical metadata और final filtering छोटे हिस्सों में चलते हैं।
+3. पुराने exchange/render callbacks को नए exchange का index या selection
+   बदलने से रोका गया। दोहराए details/preflight callbacks घटाए गए।
+4. Tick spill की disk I/O ingress lock और GUI drain से बाहर background
+   worker में गई। क्रम बना रहता है; write failure पर RAM data रखा जाता है।
+5. OAuth fallback में missing/wrong state अस्वीकार होती है। PIN/OTP/TOTP
+   और auth codes की persistence तथा legacy migration रोकी गई है।
+6. Secret-store atomic writes, bounded thread/process locks और corrupt-file
+   preservation जोड़े गए। FYERS token commit से पहले profile validation है।
+7. Upstox subscription revision race और FYERS missing-ACK recovery सुधरी।
+   transient network/rate failures को गलत login failure बताना सुधारा गया।
+8. साझा REST budget और 429 cooldown हैं। Breadth अब COMPLETE/PARTIAL/
+   LOW_COVERAGE बताता है और जरूरत होने पर दूसरा provider आजमाता है।
+9. Source reset/restart module launch और Windows updater UAC launch सुधरे।
+   UAC रद्द होने पर वर्तमान ऐप खुला रहता है और नई helper साफ हो जाती है।
+10. Authentication में DHAN LOGIN और Settings → Broker Login जोड़े गए हैं।
+    Client ID/access token को background profile validation के बाद सहेजा
+    जाता है। CHECK SAVED LOGIN, RENEW TOKEN और CHECK ALL में Dhan शामिल है।
+    Token masked/clear रहता है और गलत account के नए credentials पुराने login
+    को नहीं बदलते। Dhan का पूरा live/history adapter अभी लागू नहीं है।
+
+Dhan login कैसे इस्तेमाल करें
+============================
+1. नया सोर्स खोलकर python unified_main.py --initial-mode desktop चलाएँ।
+2. Authentication → DHAN LOGIN या Settings → Broker Login → DHAN LOGIN चुनें।
+3. अपना Dhan Client ID और आधिकारिक Dhan account से बनाया access token दें।
+   OPEN DHAN आधिकारिक https://web.dhan.co/ खोलता है।
+4. VALIDATE & SAVE दबाएँ। Profile/account validation सफल होने पर
+   DHAN: AUTH VALIDATED दिखेगा। पहले से सहेजा token स्क्रीन पर नहीं भरा जाता।
+5. CHECK SAVED LOGIN सहेजे login को जाँचता है। RENEW TOKEN को वैध/renewable
+   token चाहिए; expired या non-renewable token के लिए नया token बनाएँ।
+6. Dhan account authentication से उसका live/history feed सक्रिय नहीं होता।
+   इस रिलीज में Live Feed FYERS/Upstox इस्तेमाल करता है।
+
+नए Dhan परीक्षण mocked/offline हैं; वास्तविक Dhan account login यहाँ नहीं चला।
+
+परीक्षण और वर्तमान प्रमाण
+=========================
+reports/FIXPACK_VALIDATION.json तथा साथ की fixpack-test-logs में वर्तमान
+run के परिणाम हैं। qa/run_fixpack_checks.py को दोबारा चलाया जा सकता है।
+
+वास्तविक Qt MainWindow निर्माण, 7215 synthetic records/154 visible rows,
+event-loop progress, local web authentication/session और clean shutdown
+जाँचे गए हैं। वास्तविक unified_main.py startup में local HTTP health और
+control readiness जाँची गई, फिर उसी प्रक्रिया को clean shutdown किया गया।
+
+अलग Linux stage में तीन Cython modules compile हुए और risk payoff,
+profitability score तथा trend-policy की native/source parity सफल रही।
+
+बड़े signal workload के अलग Qt परीक्षण के performance आँकड़े log में हैं।
+ये synthetic Linux माप हैं; आपके Windows PC की गति या v5.14 का समाधान
+प्रमाणित नहीं करते। Windows UAC/DPAPI, वास्तविक broker login, entitlement,
+fees/limits और production market-data correctness की native जाँच बाकी है।
+
+विकास/जाँच के लिए
+=================
+Python 3.12 x64 इस्तेमाल करें। प्रोजेक्ट फोल्डर में:
+
+  python -m venv .venv
+
+Windows:
+  .venv\Scripts\python.exe -m pip install -r requirements-qa.txt
+  .venv\Scripts\python.exe -B qa\run_fixpack_checks.py
+
+Linux:
+  .venv/bin/python -m pip install -r requirements-qa.txt
+  .venv/bin/python -B qa/run_fixpack_checks.py
+
+QA temporary state और synthetic credentials इस्तेमाल करता है। इसका default
+report reports/FIXPACK_VALIDATION.json है। Historical version वाले पुराने
+QA/scan दस्तावेज अपने पुराने run का इतिहास हैं।
+
+सुरक्षित source startup का उदाहरण — Windows PowerShell
+=====================================================
+  $env:WINGO_SAFE_START = "1"
+  $env:WINGO_AUTO_RUN = "0"
+  $env:WINGO_STATE_ROOT = "$env:LOCALAPPDATA\WINGO_FIXPACK_TEST"
+  $env:WINGO_ENV_FILE = "$env:LOCALAPPDATA\WINGO_FIXPACK_TEST\missing.env"
+  .venv\Scripts\python.exe unified_main.py --initial-mode desktop
+
+यह अलग test state और निर्दिष्ट missing.env का startup है। Terminal में पहले
+से मौजूद broker environment variables अलग से जाँचें। अपने broker login/
+configuration को वास्तविक उपयोग के लिए अलग से तैयार और सत्यापित करें।
+Source mode में credentials केंद्रीय .env में और installed Windows mode में
+पहचाने गए secrets DPAPI-backed secrets.dat में सहेजे जाते हैं। Linux में
+DPAPI helper encryption नहीं देता। इस ZIP में वास्तविक credentials नहीं हैं।
+
+Windows का पूरा installer बनाना
+================================
+रिलीज मशीन: Windows, Python 3.12 x64, MSVC Build Tools/C++ workload और
+Inno Setup 6। Production build को आपकी Ed25519 license PUBLIC key तथा
+आपके HTTPS license server का पता चाहिए। कोई production private key इस
+किट में नहीं जोड़ी गई है। मौजूदा dedicated update public key सुरक्षित है।
+
+इंटरैक्टिव तरीका:
+  BUILD_COMMERCIAL_WINDOWS.bat
+
+PowerShell से सीधे:
+  powershell -NoProfile -File .\packaging\BUILD_WINDOWS_COMMERCIAL.ps1 -LicensePublicKey "C:\secure\license_public_key.pem" -LicenseServerUrl "https://YOUR-LICENSE-SERVER" -DistributionVersion "5.13.1"
+
+ऊपर का license path और URL उदाहरण हैं; अपने सही मान दें। Script dependencies
+स्थापित करती है और fixpack QA gate पास होने पर staging, Cython, Nuitka और
+Inno installer बनाती है। किसी आवश्यक जाँच के असफल होने पर बिल्ड रुकता है।
+
+सफल Windows run के अपेक्षित आउटपुट .commercial_build\out में:
+  WINGO_v5.13.1_Setup.exe
+  WINGO_v5.13.1_PORTABLE.zip
+  WINGOUpdater.exe
+  SHA256SUMS.txt
+  BUILD_REPORT.txt
+
+Code signing और production license-server संचालन आपकी रिलीज व्यवस्था पर
+निर्भर हैं। Windows compilation, UAC और installed update/relaunch का असली
+सत्यापन इस Linux cloud machine में नहीं हुआ है।
+
+GitHub Actions का वैकल्पिक Windows रास्ता
+========================================
+.github/workflows/build-windows-fixpack.yml एक manual workflow है। इस पूरे
+प्रोजेक्ट को अपनी चुनी repository में रखने के बाद Actions में इसे चलाया
+जा सकता है। Inputs में license PUBLIC PEM का base64 और HTTPS license-server
+URL दें। Private key इसका input नहीं है। Workflow tests पास होने पर Windows
+installer, portable runtime और updater को downloadable artifacts में रखेगा।
+यह workflow यहाँ केवल तैयार किया गया है; GitHub पर push या run नहीं हुआ है।
+
+API request बजट
+================
+ये WINGO के conservative operator defaults हैं, official broker quotas नहीं:
+  FYERS: 45 requests / 60 seconds
+  UPSTOX: 120 requests / 60 seconds
+  DHAN: 20 requests / 60 seconds
+
+बदलने के लिए:
+  WINGO_<BROKER>_REST_REQUESTS_PER_WINDOW
+  WINGO_<BROKER>_REST_WINDOW_SECONDS
+
+मान प्रक्रिया शुरू होने/पहली budget creation पर पढ़े जाते हैं। उदाहरण:
+WINGO_FYERS_REST_REQUESTS_PER_WINDOW। अपनी API की वर्तमान endpoint/account
+सीमाएँ आधिकारिक दस्तावेजों से जाँचकर मान चुनें। Budget एक प्रक्रिया में
+साझा है; अलग-अलग WINGO प्रक्रियाओं के बीच coordination नहीं करता। सीमा
+पूरी होने पर स्पष्ट retry-after त्रुटि मिलती है; GUI budget के लिए नहीं रुकता।
+
+बाकी सीमाएँ
+============
+- यह 5.13-आधारित v5.13.1 source release है। 5.14.0.16 के ऊपर automatic update या उसके
+  state-format migration के रूप में प्रमाणित नहीं है। अलग test installation
+  और अलग state में जाँचें।
+- धीमी/बंद disk पर tick data बचाने के लिए RAM, max_raw की soft limit से
+  बढ़ सकती है। RAM ticks crash-durable नहीं हैं।
+- नया Dhan live/history या Angel One/Zerodha adapter इस fixpack का हिस्सा नहीं।
+- Live execution lock यथावत है; वास्तविक ऑर्डर सुविधा नहीं जोड़ी गई।
+
+फाइल सत्यापन
+=============
+MANIFEST_SHA256.txt में सभी वितरित फाइलों के आकार और SHA256 हैं; manifest
+स्वयं सूची में नहीं है। WINGO_v5.13.1_CHANGES.json में मूल ZIP से बदली/नई
+फाइलें दर्ज हैं। Release ZIP का SHA256 साथ दिए WINGO_v5.13.1_SHA256SUMS.txt
+में है।
