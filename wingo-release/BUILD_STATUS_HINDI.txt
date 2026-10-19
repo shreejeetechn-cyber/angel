@@ -1,0 +1,25 @@
+WINGO v5.13 FIXPACK 20261019 — अंतिम बिल्ड स्थिति
+================================================
+वितरण: पूरा संशोधित सोर्स और Windows बिल्ड किट।
+आधार: उपयोगकर्ता का WINGO_v5.13_AUTO_UPDATE_BOOTSTRAP_FULL_BUILD_FINAL.zip
+मूल ZIP SHA256: de26f354281c05e29403321d82e74d0c6f213d9c16e9d58be41a45503669b1d4
+
+सफल सत्यापन:
+- 16/16 QA समूह PASS; ऐप की 226 Python फाइलों का syntax PASS।
+- वास्तविक Qt MainWindow, isolated state, local web login/session और clean shutdown PASS।
+- 7215 synthetic records/154 visible rows: अलग Qt परीक्षण 0.297s;
+  heartbeat का अधिकतम अंतर 16.7ms। यह Linux synthetic माप है।
+- वास्तविक Unified Core का HTTP health, control readiness, execution LOCKED
+  और नियंत्रित shutdown exit 0 PASS; broker credentials इस्तेमाल नहीं हुए।
+- Linux/GCC पर तीन Cython modules compile तथा native/source parity PASS।
+- source package security scan और ZIP/file checksum verification release reports में हैं।
+
+यहाँ नहीं चला:
+- Native Windows installer/EXE compile, Windows UAC और DPAPI runtime।
+- GitHub Actions workflow execution (केवल YAML संरचना जाँची गई)।
+- वास्तविक broker login, production data, entitlements और orders।
+- v5.14.0.16 validation; उसका matching source उपलब्ध नहीं है।
+
+Windows release के लिए README_FIXPACK_HINDI.txt देखें। Build script में
+fixpack QA gate शामिल है। Windows EXE इस ZIP में तैयार बताकर नहीं दी गई है।
+मूल backup और angel repository में कोई बदलाव नहीं किया गया है।

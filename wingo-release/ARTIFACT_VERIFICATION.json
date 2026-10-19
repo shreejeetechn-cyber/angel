@@ -1,0 +1,17 @@
+{
+  "archive": "WINGO_v5.13_FIXPACK_20261019_FULL_SOURCE.zip",
+  "sha256": "7d07971a8e62a53747fb17a46cb60cdcbe1a1abd00fc26505ffe87a31b5f3cbd",
+  "bytes": 2764906,
+  "zip_crc": "PASS",
+  "safe_unique_entries": "PASS",
+  "manifest_files_verified": 1012,
+  "distributed_files": 1013,
+  "all_original_files_retained": true,
+  "tested_source_matches_archive": true,
+  "original_upload_unchanged": true,
+  "source_security_scan_violations": 0,
+  "qa_suites_pass": 16,
+  "modified_files": 25,
+  "added_files": 32,
+  "native_windows_binary": "NOT_BUILT"
+}
