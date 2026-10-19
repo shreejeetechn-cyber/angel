@@ -1,0 +1,41 @@
+WINGO रिलीज़ version नियम
+=========================
+उपयोगकर्ता का स्थायी निर्देश: हर नई रिलीज़ में incremental numeric version,
+नया source folder और उसी version वाले वितरण फाइल नाम इस्तेमाल करें।
+
+वर्तमान: 5.13.3
+अगली patch रिलीज़: 5.13.4, फिर 5.13.4, इसी क्रम में।
+
+Source folder: WINGO_v5.13.3
+Full source ZIP: WINGO_v5.13.3_FULL_SOURCE.zip
+हिंदी निर्देश: WINGO_v5.13.3_README_HINDI.txt
+परीक्षण रिपोर्ट: WINGO_v5.13.3_VALIDATION.json
+बदलाव: WINGO_v5.13.3_CHANGES.json
+Source diff: WINGO_v5.13.3_PATCH.diff
+Checksum: WINGO_v5.13.3_SHA256SUMS.txt
+वितरण फ़ोल्डर: wingo-release/v5.13.3/
+
+VERSION.txt, ऐप/runtime, install marker और installer का version एक ही रखें।
+Windows file/product version चार भागों में होगा: 5.13.3.0। Build/launcher
+और workflow में संभव होने पर version सीधे VERSION.txt से पढ़ें।
+पुराने published ZIP/फ़ोल्डर सुरक्षित रखें। हर रिलीज़ में पूरा package,
+manifest/checksum और relevant परीक्षण जाँचें।
+
+Python modules, entry point unified_main.py और app के स्थिर runtime files
+के नाम उनके import/launch contracts के अनुसार रहें। Release-specific
+वितरण files/folders के नाम में नया numeric version होना चाहिए।
+
+इस फाइल तथा AGENTS.md में नियम सहेजा गया है ताकि आगे काम में लागू हो।
+
+केंद्रीय login नियम
+===================
+सभी source version folders एक ही <Wingo root>\.env इस्तेमाल करें। उदाहरण:
+C:\Wingo\.env तथा C:\Wingo\WINGO_v5.13.3\। नया version बनने पर login file
+कॉपी/स्थानांतरित या reset न करें। Normal mode CENTRAL रखें। पुराने test
+WINGO_ENV_FILE को सामान्य startup redirect न करने दें। QA के लिए explicit
+ISOLATED mode और temporary credentials जरूरी हैं।
+
+Dhan PIN/TOTP login में factors केवल manual/current attempt के लिए लें।
+PIN, OTP, TOTP या TOTP seed को केंद्रीय file, history, logs या reports में
+न सहेजें। Generated token की account/profile जाँच के बाद ही central token
+बदलें। पुराने token और दूसरे brokers की settings सुरक्षित रहें।

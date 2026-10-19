@@ -1,6 +1,6 @@
 # User release naming requirement
 
-Always increment the numeric version for every new WINGO release. Current release is 5.13.2; the next patch release is 5.13.3.
+Always increment the numeric version for every new WINGO release. Current release is 5.13.3; the next patch release is 5.13.4.
 
 - Use `wingo-release/v<version>/` for each published release, with archive `WINGO_v<version>_FULL_SOURCE.zip` and archive top-level folder `WINGO_v<version>`.
 - Include `v<version>` in all accompanying release README, checksum, validation, changes, diff and artifact verification filenames.
@@ -11,3 +11,4 @@ Always increment the numeric version for every new WINGO release. Current releas
 - Broker login for source releases always uses one central `<Wingo root>/.env`; never create credential copies per version. Normal CENTRAL mode ignores stale WINGO_ENV_FILE test overrides.
 - QA must explicitly use ISOLATED mode with temporary WINGO_ENV_FILE/state. ISOLATED/EXPLICIT mode without a path must fail without falling back to real credentials.
 - Dhan saved-login checks, validated saves and renewals use that same central configuration authority and must preserve other broker settings.
+- Dhan PIN/TOTP login takes manually entered one-use factors and validates the issued account/token before central persistence. Never persist factors/TOTP seeds, expose them in logs/mirrors, or retain unsent factors after Desktop/panel close/hide or mode changes.

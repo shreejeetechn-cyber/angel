@@ -1,0 +1,15 @@
+{
+  "release_version": "5.13.3",
+  "archive": "WINGO_v5.13.3_FULL_SOURCE.zip",
+  "source_folder": "WINGO_v5.13.3",
+  "bytes": 2773192,
+  "sha256": "9255a7114b843a3d1f7e09240d3558a08a8c445bb31175589b613d84dba148e7",
+  "zip_crc": "PASS",
+  "manifest_files_verified": 1024,
+  "distributed_files": 1025,
+  "original_files_retained": true,
+  "tested_source_matches": true,
+  "source_security_scan_violations": 0,
+  "qa_suites_pass": 19,
+  "windows_binary": "NOT_BUILT"
+}

@@ -1,0 +1,181 @@
+{
+  "source_version": "5.13.3",
+  "release_version": "5.13.3",
+  "python": "3.12.14",
+  "platform": "linux",
+  "syntax_files": 226,
+  "suites": [
+    {
+      "suite": "verify_fixpack_20261019_runtime_smoke.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 6.577,
+      "log": "fixpack-test-logs/verify_fixpack_20261019_runtime_smoke.log"
+    },
+    {
+      "suite": "verify_fixpack_20261019_tick_spool.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.228,
+      "log": "fixpack-test-logs/verify_fixpack_20261019_tick_spool.log"
+    },
+    {
+      "suite": "verify_fixpack_20261019_updater_elevation.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.162,
+      "log": "fixpack-test-logs/verify_fixpack_20261019_updater_elevation.log"
+    },
+    {
+      "suite": "verify_fixpack_auth_storage.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.813,
+      "log": "fixpack-test-logs/verify_fixpack_auth_storage.log"
+    },
+    {
+      "suite": "verify_fixpack_central_env.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.227,
+      "log": "fixpack-test-logs/verify_fixpack_central_env.log"
+    },
+    {
+      "suite": "verify_fixpack_dhan_auth.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.314,
+      "log": "fixpack-test-logs/verify_fixpack_dhan_auth.log"
+    },
+    {
+      "suite": "verify_fixpack_dhan_gui.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 4.811,
+      "log": "fixpack-test-logs/verify_fixpack_dhan_gui.log"
+    },
+    {
+      "suite": "verify_fixpack_live_subscriptions.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.434,
+      "log": "fixpack-test-logs/verify_fixpack_live_subscriptions.log"
+    },
+    {
+      "suite": "verify_fixpack_rest_budget_breadth.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.233,
+      "log": "fixpack-test-logs/verify_fixpack_rest_budget_breadth.log"
+    },
+    {
+      "suite": "verify_signal_catalog_fixpack_20261019.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 6.715,
+      "log": "fixpack-test-logs/verify_signal_catalog_fixpack_20261019.log"
+    },
+    {
+      "suite": "verify_v5_13_startup_dependency_regression.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.078,
+      "log": "fixpack-test-logs/verify_v5_13_startup_dependency_regression.log"
+    },
+    {
+      "suite": "verify_v5_13_canonical_regression.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 2.775,
+      "log": "fixpack-test-logs/verify_v5_13_canonical_regression.log"
+    },
+    {
+      "suite": "verify_v5_13_auto_update_client.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.201,
+      "log": "fixpack-test-logs/verify_v5_13_auto_update_client.log"
+    },
+    {
+      "suite": "verify_v5_10_multi_feed_relogin_hardening.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.03,
+      "log": "fixpack-test-logs/verify_v5_10_multi_feed_relogin_hardening.log"
+    },
+    {
+      "suite": "verify_v5_00_rc_dev3_inline_auth_integration.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 2.943,
+      "log": "fixpack-test-logs/verify_v5_00_rc_dev3_inline_auth_integration.log"
+    },
+    {
+      "suite": "verify_v5_10_architecture.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.197,
+      "log": "fixpack-test-logs/verify_v5_10_architecture.log"
+    },
+    {
+      "suite": "verify_v5_08_stress_soak.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.316,
+      "log": "fixpack-test-logs/verify_v5_08_stress_soak.log"
+    },
+    {
+      "suite": "verify_commercial_security.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.534,
+      "log": "fixpack-test-logs/verify_commercial_security.log"
+    },
+    {
+      "suite": "verify_commercial_packaging_tools.py",
+      "status": "PASS",
+      "exit_code": 0,
+      "elapsed_seconds": 0.315,
+      "log": "fixpack-test-logs/verify_commercial_packaging_tools.log"
+    }
+  ],
+  "status": "PASS",
+  "native_windows_build": "NOT_RUN",
+  "live_broker_validation": "NOT_RUN",
+  "source_root": "WINGO_v5.13.3",
+  "base_uploaded_source_version": "5.13",
+  "distribution": "FULL_SOURCE_AND_WINDOWS_BUILD_KIT",
+  "compiled_windows_installer": "NOT_BUILT",
+  "windows_uac_dpapi": "NOT_RUN",
+  "v5_14_0_16_validation": "NOT_RUN_MATCHING_SOURCE_UNAVAILABLE",
+  "unified_core": {
+    "release_version": "5.13.3",
+    "http_health": "PASS",
+    "control_readiness": "PASS",
+    "execution": "LOCKED",
+    "controlled_shutdown_exit_code": 0,
+    "live_broker_validation": "NOT_RUN"
+  },
+  "dhan": {
+    "visible_authentication_settings": "PASS",
+    "offline_backend_tests": 33,
+    "pin_totp_generation": "PASS_MOCKED_API",
+    "profile_validation_before_save": "PASS",
+    "pin_totp_persisted": false,
+    "default_gui_login": "PIN_TOTP",
+    "live_history_routing": "NOT_IMPLEMENTED"
+  },
+  "centralized_login": {
+    "normal_mode": "CENTRAL",
+    "source_file": "<Wingo root>/.env",
+    "stale_override_ignored": true,
+    "offline_regressions": 14,
+    "saved_dhan_login_auto_check": "PASS",
+    "qa_explicit_isolation": true
+  },
+  "native_numerical_modules": {
+    "status": "PASS_PREVIOUS_UNCHANGED_MODULES",
+    "context": "Three Linux numerical modules compiled and parity-tested before GUI/version changes; no native binaries distributed."
+  },
+  "historical_reports": "Other versioned reports from the original backup describe their historical runs."
+}
