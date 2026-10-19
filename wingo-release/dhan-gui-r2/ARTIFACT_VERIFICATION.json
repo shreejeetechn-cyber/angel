@@ -1,0 +1,17 @@
+{
+  "archive": "WINGO_v5.13_FIXPACK_20261019_DHAN_GUI_R2_FULL_SOURCE.zip",
+  "sha256": "601c277190adf342b1e8bbd361e8c3cea334a80c8ea0d4f71f4a4967c29ce508",
+  "bytes": 2779009,
+  "zip_crc": "PASS",
+  "safe_unique_entries": "PASS",
+  "manifest_files_verified": 1017,
+  "distributed_files": 1018,
+  "all_original_files_retained": true,
+  "tested_source_matches_archive": true,
+  "original_upload_unchanged": true,
+  "source_security_scan_violations": 0,
+  "qa_suites_pass": 18,
+  "modified_files": 26,
+  "added_files": 37,
+  "native_windows_binary": "NOT_BUILT"
+}

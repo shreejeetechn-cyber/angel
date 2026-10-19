@@ -1,0 +1,457 @@
+{
+  "base_archive": "WINGO_v5.13_AUTO_UPDATE_BOOTSTRAP_FULL_BUILD_FINAL.zip",
+  "base_archive_sha256": "de26f354281c05e29403321d82e74d0c6f213d9c16e9d58be41a45503669b1d4",
+  "source_version": "5.13",
+  "fixpack": "20261019",
+  "revision": "DHAN_GUI_R2",
+  "original_file_count": 980,
+  "original_files_removed": [],
+  "changed_or_added_file_count": 63,
+  "generated_files_excluded_from_self_hash": [
+    "FIXPACK_CHANGES.json",
+    "MANIFEST_SHA256.txt"
+  ],
+  "changes": [
+    {
+      "path": ".github/workflows/build-windows-fixpack.yml",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "702678832ea37591aa28b82e5e96e74c1a78b968f6eb913074c6728c6a558f64",
+      "bytes": 2353
+    },
+    {
+      "path": "README_FIXPACK_HINDI.txt",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "e0a4cfab39df8fff7c94b679ec723c8332a328031cc17391cda718b55f6d0abe",
+      "bytes": 13495
+    },
+    {
+      "path": "app/core/_commercial_profile.py",
+      "status": "modified",
+      "original_sha256": "65bc5c1315a3e6def9005f1a4a2dd2d53391ee2d188a25ae4723951a3c283a0f",
+      "sha256": "044ce4c624231f5176b53ec8a2756f66c89f7a8d6219fb0f88ea41d65d16e5b0",
+      "bytes": 283
+    },
+    {
+      "path": "app/core/app_paths.py",
+      "status": "modified",
+      "original_sha256": "c2e077b86d05033aaed414e6a0baaac233b76f86afb78e1563c151c6056f927d",
+      "sha256": "71aa62af6e2cffd4d6aabdcd831cf376c0c40371f53eea9d0b1e72a21de844f2",
+      "bytes": 6441
+    },
+    {
+      "path": "app/core/config.py",
+      "status": "modified",
+      "original_sha256": "bc65e9028ba103982a03ab624c0dc542e22ec0d8abc0f3a1d757ad2c6c7c8ca8",
+      "sha256": "a1a51b0382bc09f6d0233b7dede2cbcde52db9ac895678e9d20742298225f41c",
+      "bytes": 12106
+    },
+    {
+      "path": "app/core/diagnostics.py",
+      "status": "modified",
+      "original_sha256": "7a46619782df3e89ef2a1cabdca07d35186d9da92dbb429665dfccaf02ebbf31",
+      "sha256": "db746f9ed14ade2f9c7e518c6d93951c2dfea2fd2ede70ee47a6834510e8fbd1",
+      "bytes": 5505
+    },
+    {
+      "path": "app/core/live_tick_buffer.py",
+      "status": "modified",
+      "original_sha256": "6100d9239fa72d9b0add725b0050e781fe4b93d62a9560321b00e45996deeb29",
+      "sha256": "7866bfccbb7996e3da67881e032eca2da475e088af611e5a6bcee8cea95060c1",
+      "bytes": 17789
+    },
+    {
+      "path": "app/core/market_breadth.py",
+      "status": "modified",
+      "original_sha256": "0be0b24c6eacf1b012b624a14d66281f8ffa3209f997e586f187923ba44716fb",
+      "sha256": "f77dd5bf55cf94fc214a19841ec5784e703c5789c7c06f624b83d793a895bb62",
+      "bytes": 9095
+    },
+    {
+      "path": "app/core/migration.py",
+      "status": "modified",
+      "original_sha256": "7d0668d716d4e132e646a65fe90f3f77df66a55cb089f73de2f9fc4567c62366",
+      "sha256": "5fd4341c56dc0c67a4a7065d0b88bcc61566700fe3b47ba9e71af0b5cea47568",
+      "bytes": 4326
+    },
+    {
+      "path": "app/core/runtime.py",
+      "status": "modified",
+      "original_sha256": "2eb4128cda53ef2fe40d7db3c46a98083dce3c720635f6a35dd34dc97e0270e1",
+      "sha256": "8081ff8362e76956dae304c6687f196471bfbac70eb141591f33ab02591ddce8",
+      "bytes": 2022
+    },
+    {
+      "path": "app/core/secret_store.py",
+      "status": "modified",
+      "original_sha256": "99bf7acb518707ee666eb478ea9e941450e7595096586d6bccba3bd4aecff441",
+      "sha256": "729af7c2752a8c3aabcb0e3bf32f05d1fb8c9047947ea53047703023ec35bbdb",
+      "bytes": 9152
+    },
+    {
+      "path": "app/futures/service.py",
+      "status": "modified",
+      "original_sha256": "e58a39bf11aba6dc13888a120884093e6ddd2994ba93fd490d7460d6e77dd11f",
+      "sha256": "ba6d8038b18dd4ad460cea59f71480787c6e966b2a70faf2c53f7c15169fc0f8",
+      "bytes": 37999
+    },
+    {
+      "path": "app/option_chain/fyers_option_chain.py",
+      "status": "modified",
+      "original_sha256": "7d24e022eaa157317898f2e4dfe78a19c089e1f3b64901fcb05d0675bc510a4d",
+      "sha256": "550da8aab673957e0e6c86fca66c29829fb9178a1bb38e59f100ff743cf917e4",
+      "bytes": 2269
+    },
+    {
+      "path": "app/providers/auth_manager.py",
+      "status": "modified",
+      "original_sha256": "1230ff305766dfe1bf8beb2be87ab7c30a624b7508801fe680f7f45a33ab694b",
+      "sha256": "07e6c5326c83a41627a2cf051e09af2cc1e1b204a28fa9b480c617939cd344d5",
+      "bytes": 24467
+    },
+    {
+      "path": "app/providers/dhan_provider.py",
+      "status": "modified",
+      "original_sha256": "a58574da28c91a23434467d34fd801942509217fe454c39591690039d7eea70b",
+      "sha256": "e9e121504df39fd907f84453c772d543f43f40547d440b90fa4656caaadcb4fe",
+      "bytes": 4894
+    },
+    {
+      "path": "app/providers/fyers_live.py",
+      "status": "modified",
+      "original_sha256": "dc67957f74ad890ff9003bdb3d502d77de66ff933ab168f4d4093b31eb02d474",
+      "sha256": "4cb8ce50b828b890f2bce4c80fdc5d9218901e9085a5cb470a523146d8e78883",
+      "bytes": 55321
+    },
+    {
+      "path": "app/providers/fyers_provider.py",
+      "status": "modified",
+      "original_sha256": "a75114d0ba6df44a859d1d52af9a1eb593e5788cc2a8081bd56436970e357c87",
+      "sha256": "f0fb432326d81dbb62fef15536d51f6ce2e19f50e2d861623ef2ca0efe7299e5",
+      "bytes": 14852
+    },
+    {
+      "path": "app/providers/registry.py",
+      "status": "modified",
+      "original_sha256": "51a922e8e83525996a030afa2a599f98879f3d03025098f4bd0756bb826fd089",
+      "sha256": "05bab49094e8eb80b556c02e6e85362aa38ccb8472fb38456bdb4cc4caa80ed7",
+      "bytes": 1290
+    },
+    {
+      "path": "app/providers/request_budget.py",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "f2a62e90ebba39750c238bb0b07e472f865f4bb139552a323c18749aad098789",
+      "bytes": 8189
+    },
+    {
+      "path": "app/providers/upstox_live.py",
+      "status": "modified",
+      "original_sha256": "cb533f6982076d526583a8e5c8720fa4480047078d3112a7e0223f716d618620",
+      "sha256": "c8b2a9783b608bb3c483b8dcd231d6204308b76692137e0c39f94c1e70c3b04f",
+      "bytes": 14939
+    },
+    {
+      "path": "app/providers/upstox_provider.py",
+      "status": "modified",
+      "original_sha256": "a530c6829ebde87698a7a596c1121c34130ffb183c17966cc78c4419f534cb13",
+      "sha256": "b233399e0517ee9ac04c4f1316decf79d4e8bee08a45042df55e683ee9ca1945",
+      "bytes": 21313
+    },
+    {
+      "path": "app/signals/lifecycle.py",
+      "status": "modified",
+      "original_sha256": "803b394c2056bb661752ee288da77e82f12e3619f26cd04de65b2423d49a078c",
+      "sha256": "1d12102c604cd690d15997cf56995f72e6b029e4d275d2c9b9fc860eef0738bb",
+      "bytes": 21618
+    },
+    {
+      "path": "app/ui/main_window.py",
+      "status": "modified",
+      "original_sha256": "c4a69a29669c3430b88f0df2d9aa4b7e094e81f219275c901f959ccd53b3508a",
+      "sha256": "3a431e50abbb16c6043cfd30ab83072f04795ef5aa1edecd7b7b6295f858f31c",
+      "bytes": 1199265
+    },
+    {
+      "path": "app/updater/launcher.py",
+      "status": "modified",
+      "original_sha256": "2b8b25a5cf973758010fe5989ade844941684de3d1064ae59b88c7f5428e2976",
+      "sha256": "58fcf0bc38e9ae8862cda83abfd53ffdd788216c4336d82c3e012d11cbd3537f",
+      "bytes": 5655
+    },
+    {
+      "path": "packaging/.env.example",
+      "status": "modified",
+      "original_sha256": "7d7811e63ddad98921926d844ae5657434a21339df4f5ea5da4e727da35c58f6",
+      "sha256": "ea394baa81cf70fcaa5cc36f7ab39682e900c31897b5b4b60bae261d2a977d9d",
+      "bytes": 411
+    },
+    {
+      "path": "packaging/BUILD_WINDOWS_COMMERCIAL.ps1",
+      "status": "modified",
+      "original_sha256": "8ceca57b5c80170b66770baffd219ae03eb6c404809428ccb0ad699b31162323",
+      "sha256": "f4be57fab9b46a9ae682252f4f2b37659f6437177282d9c747b83ac549a4c992",
+      "bytes": 19352
+    },
+    {
+      "path": "qa/run_fixpack_checks.py",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "76df252f9c45b2068b9224ad34d39526e83201bb65f7a441c040fa50396f9a88",
+      "bytes": 4874
+    },
+    {
+      "path": "qa/verify_fixpack_20261019_runtime_smoke.py",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "f0e17175d7ce41a5f3f19bc52c796b960b37a2ae7925b7538f904edf300ca9a9",
+      "bytes": 6186
+    },
+    {
+      "path": "qa/verify_fixpack_20261019_tick_spool.py",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "ceccfc0f9d646d96530285151e029834c9a77593d3712d9a673c56784c5b3746",
+      "bytes": 11715
+    },
+    {
+      "path": "qa/verify_fixpack_20261019_updater_elevation.py",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "36bcb388c1f2425c97ea83285a178100932a05c2952eef399cc142b67f796bd3",
+      "bytes": 9621
+    },
+    {
+      "path": "qa/verify_fixpack_auth_storage.py",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "c89020de76af250a5959f121acf909879c40f38aa7790b5d56cd0660fa4e566e",
+      "bytes": 15754
+    },
+    {
+      "path": "qa/verify_fixpack_dhan_auth.py",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "749041600983c587503dd4684c980cb371d9b566692a3c2b71cfc0241a4ea58a",
+      "bytes": 13567
+    },
+    {
+      "path": "qa/verify_fixpack_dhan_gui.py",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "bffe17faba837ad2d463ba77e7a3a0d88e0553bf054dc7ca57bf4fc6fe9b53e3",
+      "bytes": 9609
+    },
+    {
+      "path": "qa/verify_fixpack_live_subscriptions.py",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "c1fd217bb4d14160625314709470d74b52e9a01f090396bfe99a69a503090286",
+      "bytes": 13921
+    },
+    {
+      "path": "qa/verify_fixpack_rest_budget_breadth.py",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "ea392dce0435a5f9e43b01e55e26c2b055418a8fecce82777c8ceb195d53958d",
+      "bytes": 15660
+    },
+    {
+      "path": "qa/verify_signal_catalog_fixpack_20261019.py",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "036704571942cf1651380b86cdfb09fe92b71b956531cf868e883fa834c00037",
+      "bytes": 22100
+    },
+    {
+      "path": "qa/verify_v5_00_rc_dev3_inline_auth_integration.py",
+      "status": "modified",
+      "original_sha256": "858c5c58731747fe8da71b391b4c4eec5e6c4e273825b3077ab7b4d00fe06979",
+      "sha256": "073dd7b180e555c7ed1e9d1e746bcf08132495e1f94add0595797d5c2f4bc7b0",
+      "bytes": 5927
+    },
+    {
+      "path": "qa/verify_v5_10_architecture.py",
+      "status": "modified",
+      "original_sha256": "26f2a4c73225fd97c765cb003c410019cf7fdea9e9d37a4cfb1c8489346d5291",
+      "sha256": "4da675ae1ed2b12f48e877c777583212fc2d23ee4332be5c681db529e4101dc5",
+      "bytes": 10747
+    },
+    {
+      "path": "qa/verify_v5_13_auto_update_client.py",
+      "status": "modified",
+      "original_sha256": "8a0194e170428253dc497c12df4bc6076f65f444e0e94a12249b9322410154da",
+      "sha256": "6d94332fc9652492b8a5877332f3cca589cbea56d549f3aa81ae8a591790ee22",
+      "bytes": 14558
+    },
+    {
+      "path": "reports/BUILD_STATUS_HINDI.txt",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "0afe1aeebb435e43b56e452088642824dea5dd1140494ff7c83d1afd8066d812",
+      "bytes": 2527
+    },
+    {
+      "path": "reports/DEPENDENCIES_LINUX_VALIDATED.txt",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "9e543169ab2f408c6ea3651b50f525b35a025b1daadbb8fcbeb410338023ccf7",
+      "bytes": 1014
+    },
+    {
+      "path": "reports/FIXPACK_SOURCE_SECURITY_SCAN.json",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "af4c33ee3aa635a437490c68ba5471d106cf92aef0fd5bb91fcac2ec7a952f14",
+      "bytes": 157
+    },
+    {
+      "path": "reports/FIXPACK_VALIDATION.json",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "3b0b3c40fc230a5a301d88eb5958e5a1d50306a1ea4a9872a11771a3fa7e39f9",
+      "bytes": 5729
+    },
+    {
+      "path": "reports/NATIVE_LINUX_PARITY.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "5c456825023ee642403d679a41466890c35ea1e442f0ee94869cb6835bac42fe",
+      "bytes": 102
+    },
+    {
+      "path": "reports/UNIFIED_CORE_VALIDATION.json",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "16a7e9f9c8e2a16e4459cbf180a396db490a31e616f54de77d37e3741eb51548",
+      "bytes": 190
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_commercial_packaging_tools.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "8d0053069bc1e728377ebce275f86c826fd36575db3cc67c8ca5541baf4f2142",
+      "bytes": 1556
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_commercial_security.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "395ce4c231e6079b00a3458527016e7472ae9d94c2835d4cae1363eb96d4084c",
+      "bytes": 1044
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_fixpack_20261019_runtime_smoke.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "7a244da088d1f7b7535114a6bb7fa75f275982699c6badc8f7fe474ca6986b52",
+      "bytes": 1457
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_fixpack_20261019_tick_spool.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "88481041725be32a6afc3c0f66906bef2b96c26803002de177e67537c68f0f83",
+      "bytes": 1988
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_fixpack_20261019_updater_elevation.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "c05de8d473c127abff3ead7bef01561f3c88676fe477fd50ce26af018278b261",
+      "bytes": 1646
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_fixpack_auth_storage.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "703f00fa365b19ebfbfa378041f0dfcfe8ed29c53401a8577cc8205893384560",
+      "bytes": 2175
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_fixpack_dhan_auth.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "663cf78e29a564dd0cf53593f8bfe6eefed503fdafa4868dad095595d1820a95",
+      "bytes": 3005
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_fixpack_dhan_gui.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "de4f4461a199c98635dbd8a227d21ba90f52abf54a172aa1757ddbc13bf8c6bf",
+      "bytes": 2636
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_fixpack_live_subscriptions.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "62a2ad7f188bc812567ca743beac78125e3342f06b277bfcbf84b2062975aa51",
+      "bytes": 3040
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_fixpack_rest_budget_breadth.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "5ecf0117b4295cb57dbd8864b8e495ae16f7514d1a7d0b4a8c6ecb3b62d0a039",
+      "bytes": 2890
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_signal_catalog_fixpack_20261019.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "60397340b97e114518f0932fcdd23ea54801a9c57095cdd77b9ae5cac49ebbf3",
+      "bytes": 2239
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_v5_00_rc_dev3_inline_auth_integration.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "1ff452a8b3cf1ab9210db6f69ac719f252de75b3c760ef0fa446debe76bd3b57",
+      "bytes": 1735
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_v5_08_stress_soak.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "02255fcf300ca4651c61f824b4ea8ba00ffe56ecd539bb6199e81ea7ac0e9c65",
+      "bytes": 1006
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_v5_10_architecture.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "1959d43147f20282ef0316d1dcd70f749cd5144de89774c3d4f2ca5ec72150c7",
+      "bytes": 4701
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_v5_10_multi_feed_relogin_hardening.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "4f0b3fb3921072864849da665e2d17983e01c41b7c1882a662a5d361559b472b",
+      "bytes": 933
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_v5_13_auto_update_client.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "8f4401d8669bb1205c1010cfe64223903d190167970c3a85719c811d7b47ab05",
+      "bytes": 309
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_v5_13_canonical_regression.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "06b29091ee5666b5268f6644329659b5d5e178cc8ed7f89f5801b3ee80b2cb4c",
+      "bytes": 5165
+    },
+    {
+      "path": "reports/fixpack-test-logs/verify_v5_13_startup_dependency_regression.log",
+      "status": "added",
+      "original_sha256": null,
+      "sha256": "9a1dc074183f1edc4ee6f34aa8d823f849a2afeee7d39533ef5b18ecfb1ed2ee",
+      "bytes": 889
+    }
+  ]
+}
